@@ -1,0 +1,578 @@
+#Include Once "string.bi"
+#Include Once "cCalendar.inc"
+
+Dim oCalendar               as cCalendar
+Dim sToday                  as String
+Dim sTime                   as String 
+Dim arRules()               as DATE_CALCULATION
+Dim uGreg1                  as GREGORIAN_DATE
+Dim uGreg2                  as GREGORIAN_DATE
+Dim uGregToday              as GREGORIAN_DATE
+Dim uJulian                 as JULIAN_DATE
+Dim uISO                    as ISO_DATE
+Dim uChinese                as CHINESE_DATE
+Dim uLocale                 as LOCATION_LOCALE
+Dim uDestination            as LOCATION_LOCALE
+Dim arPhases()              as LUNAR_PHASES
+Dim nSerial                 as LongInt
+Dim iIndex                  as Long
+Dim nYear                   as Long
+Dim nSunrise                as LongInt
+Dim nSunset                 as LongInt
+Dim nSunriseOther           as LongInt
+Dim nSolstice               as LongInt
+Dim nDaylightSavingsBegins  as LongInt
+Dim nDaylightSavingsEnds    as LongInt
+Dim nBogus                  as BOOLEAN
+Dim sChineseYearName        as String
+Dim sChineseMonthName       as String
+Dim sChineseYearAugury      as String
+Dim sLunarPhase             as String
+Dim nCrescent               as BOOLEAN
+Dim nWaxing                 as BOOLEAN
+Dim nIllumination           as Double
+Dim nDistance               as Double
+Dim nMonthBegin             as LongInt
+Dim nMonthEnd               as LongInt
+
+    sToday = Date
+    sTime = Time
+    uGregToday.Month = Val(Left(sToday,2))
+    uGregToday.Day = Val(Mid(sToday,4,2))
+    uGregToday.Year = Val(Right(sToday,4))
+    uGregToday.Hour = Val(Left(sTime,2))
+    uGregToday.Minute = Val(Mid(sTime,4,2))
+    uGregToday.Second = Val(Right(sTime,2))
+
+    nYear = uGregToday.Year
+
+    ReDim arRules(0 To 1)
+    
+' Daylight Savings rules for most of USA
+  
+    arRules(0).Name = "Daylight Savings Begins"    
+    arRules(0).Month = cCalendarClass.MARCH
+    arRules(0).Day = 0
+    arRules(0).Year = nYear
+    arRules(0).RuleClass = cCalendarClass.GREGORIAN_RULES
+    arRules(0).Rule = cCalendarClass.SECOND_WEEK
+    arRules(0).Weekday = cCalendarClass.SUNDAY
+    arRules(0).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(0).SundayRule = cCalendarClass.NO_SUNDAY_RULE
+    arRules(0).YearRule = cCalendarClass.ALL_YEARS
+    arRules(0).NonBusinessDate = False
+    
+    arRules(1).Name = "Daylight Savings Ends"    
+    arRules(1).Month = cCalendarClass.NOVEMBER
+    arRules(1).Day = 0
+    arRules(1).Year = nYear
+    arRules(1).RuleClass = cCalendarClass.GREGORIAN_RULES
+    arRules(1).Rule = cCalendarClass.FIRST_WEEK
+    arRules(1).Weekday = cCalendarClass.SUNDAY
+    arRules(1).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(1).SundayRule = cCalendarClass.NO_SUNDAY_RULE
+    arRules(1).YearRule = cCalendarClass.ALL_YEARS
+    arRules(1).NonBusinessDate = False
+    
+    oCalendar.DateCalculation(arRules())
+    nDaylightSavingsBegins = arRules(0).ObservedDays1 + cCalendarClass.ONE_HOUR * 2
+    nDaylightSavingsEnds = arRules(1).ObservedDays1  + cCalendarClass.ONE_HOUR * 2    
+    
+    nSerial = oCalendar.SerialFromGregorian(uGregToday)
+    oCalendar.GregorianFromSerial(nSerial,uGreg1)
+    oCalendar.JulianFromSerial(nSerial,uJulian)
+    oCalendar.ISOFromSerial(nSerial,uISO)
+    oCalendar.ChineseFromSerial(nSerial,uChinese)
+    
+' Chinese year marriage augury
+
+    Select Case uChinese.YearAugury
+
+       Case cCalendarClass.CHINESE_WIDOW_YEAR
+       
+          sChineseYearAugury = ", Widow Year) "
+          
+       Case cCalendarClass.CHINESE_BLIND_YEAR
+       
+          sChineseYearAugury = ", Blind Year) "
+          
+       Case cCalendarClass.CHINESE_BRIGHT_YEAR
+       
+          sChineseYearAugury = ", Bright Year) "
+          
+       Case Else    
+
+          sChineseYearAugury = ", Double Bright Year) "   
+    
+    End Select
+    
+' Chinese Year and Month names
+
+    Select Case uChinese.YearAnimal
+    
+       Case cCalendarClass.CHINESE_RAT
+       
+          sChineseYearName = " (Rat" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_OX
+       
+          sChineseYearName = " (Ox" + sChineseYearAugury
+ 
+       Case cCalendarClass.CHINESE_TIGER
+       
+          sChineseYearName = " (Tiger" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_RABBIT
+       
+          sChineseYearName = " (Rabbit" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_DRAGON
+       
+          sChineseYearName = " (Dragon" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_SNAKE
+       
+          sChineseYearName = " (Snake" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_HORSE
+       
+          sChineseYearName = " (Horse" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_GOAT
+       
+          sChineseYearName = " (Goat" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_MONKEY
+       
+          sChineseYearName = " (Monkey" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_ROOSTER
+       
+          sChineseYearName = " (Rooster" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_DOG
+       
+          sChineseYearName = " (Dog" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_PIG
+       
+          sChineseYearName = " (Pig" + sChineseYearAugury
+          
+       Case Else
+       
+          sChineseYearName = " (Unknown" + sChineseYearAugury
+          
+    End Select
+    
+' Chinese Leap Months do not have names
+
+    If uChinese.LeapMonth = True Then
+    
+       sChineseMonthName = ""
+       
+    Else
+
+    Select Case uChinese.MonthAnimal
+    
+       Case cCalendarClass.CHINESE_RAT
+       
+          sChineseMonthName = " (Zi Rat) "
+          
+       Case cCalendarClass.CHINESE_OX
+       
+          sChineseMonthName = " (Chou Ox) "
+ 
+       Case cCalendarClass.CHINESE_TIGER
+       
+          sChineseMonthName = " (Yin Tiger) "
+          
+       Case cCalendarClass.CHINESE_RABBIT
+       
+          sChineseMonthName = " (Mao Rabbit) "
+          
+       Case cCalendarClass.CHINESE_DRAGON
+       
+          sChineseMonthName = " (Chen Dragon) "
+          
+       Case cCalendarClass.CHINESE_SNAKE
+       
+          sChineseMonthName = " (Si Snake) "
+          
+       Case cCalendarClass.CHINESE_HORSE
+       
+          sChineseMonthName = " (Wu Horse) "
+          
+       Case cCalendarClass.CHINESE_GOAT
+       
+          sChineseMonthName = " (Wei Sheep) "
+          
+       Case cCalendarClass.CHINESE_MONKEY
+       
+          sChineseMonthName = " (Shen Monkey) "
+          
+       Case cCalendarClass.CHINESE_ROOSTER
+       
+          sChineseMonthName = " (You Rooster) "
+          
+       Case cCalendarClass.CHINESE_DOG
+       
+          sChineseMonthName = " (Xu Dog) "
+          
+       Case cCalendarClass.CHINESE_PIG
+       
+          sChineseMonthName = " (Hai Pig) "
+          
+       Case Else
+       
+          sChineseMonthName = " (Unknown) "
+          
+    End Select    
+
+    End If         
+    
+    Print "Today is..."
+    Print Str(nSerial) + " (Serial)"
+    Print Str(uGreg1.Month) + "/" + Str(uGreg1.Day) + "/" + Str(uGreg1.Year) + _
+          " at " + Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00") + ":" + Format(uGreg1.Second,"00") + " (Gregorian)"
+    Print Str(uJulian.Month) + "/" + Str(uJulian.Day) + "/" + Str(uJulian.Year) + " (Julian)"
+    Print "Day " + Str(uISO.Day) + " Week " + Str(uISO.Week) + " Year " + Str(uISO.Year) + " (Year has " + _
+       Str(IIf(uISO.LongYear = False,52,53)) + " weeks)" + " (ISO)"
+    Print  "Cycle " + Str(uChinese.Cycle) + " Year " + Str(uChinese.Year) + sChineseYearName + " Month " + Str(uChinese.Month) + _
+       "." + Str(uChinese.LeapMonth) + sChineseMonthName + " Day " + Str(uChinese.Day) + " (Chinese)"   
+    Print ""
+    uLocale.Zone = -9                       ' Standard Time
+    uLocale.Elevation = 46
+    Print "Location is Ted Steven's International Airport, Anchorage Alaska"
+    Print "Time Zone is " + Str(uLocale.Zone)
+    oCalendar.GregorianFromSerial(nDaylightSavingsEnds,uGreg1)
+    Print "Daylight Savings Ends at " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) + _
+          " at " + Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00")
+    oCalendar.GregorianFromSerial(nDaylightSavingsBegins,uGreg1)
+    Print "Daylight Savings Begins at " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) + _
+          " at " + Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00")
+    uLocale.Latitude = oCalendar.DecimalDegrees(61,10,26.9634)
+    uLocale.Longitude = oCalendar.DecimalDegrees(-149,59,53.4791)
+    Print "Latitude is " + Str(uLocale.Latitude)
+    Print "Longitude is " + Str(uLocale.Longitude)
+    Print "Elevation is " + Str(uLocale.Elevation) + " meters"
+    uLocale.bApplyDaylightSavings = True
+    uLocale.DaylightSavingsBegins = nDaylightSavingsBegins
+    uLocale.DaylightSavingsEnds = nDaylightSavingsEnds
+    uLocale.DaylightSavingsMinutes = 60
+
+    oCalendar.Sunrise(uLocale,nSunriseOther,cCalendarClass.ASTRONOMICAL_TWILIGHT_TIME,nBogus,nSerial)
+    
+    If nBogus = True Then
+
+       Print "Astronomical Twilight could not be calculated for today"
+       
+    Else
+    
+       oCalendar.GregorianFromSerial(nSunriseOther,uGreg1)
+
+       Print "Astronomical Twilight today (" + IIf(uLocale.bDaylightLightSavingsActive = False,"standard","daylight savings") + " time) is " + _
+             Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00")
+             
+   End If
+    
+    oCalendar.Sunrise(uLocale,nSunriseOther,cCalendarClass.NAUTICAL_TWIGHTLIGHT_TIME,nBogus,nSerial)
+    
+    If nBogus = True Then
+
+       Print "Nautical Twilight could not be calculated for today"
+       
+    Else
+    
+       oCalendar.GregorianFromSerial(nSunriseOther,uGreg1)
+
+       Print "Nautical Twilight today (" + IIf(uLocale.bDaylightLightSavingsActive = False,"standard","daylight savings") + " time) is " + _
+             Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00")
+             
+   End If
+   
+    oCalendar.Sunrise(uLocale,nSunriseOther,cCalendarClass.CIVIL_TWILIGHT_TIME,nBogus,nSerial)
+    
+    If nBogus = True Then
+
+       Print "Civil Twilight could not be calculated for today"
+       
+    Else
+    
+       oCalendar.GregorianFromSerial(nSunriseOther,uGreg1)
+
+       Print "Civil Twilight today (" + IIf(uLocale.bDaylightLightSavingsActive = False,"standard","daylight savings") + " time) is " + _
+             Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00")
+             
+   End If
+   
+    oCalendar.Sunrise(uLocale,nSunrise,cCalendarClass.SUNRISE_SUNSET_TIME,nBogus,nSerial)
+    
+    If nBogus = True Then
+
+       Print "Sunrise could not be calculated for today"
+       
+    Else
+    
+       oCalendar.GregorianFromSerial(nSunrise,uGreg1)
+
+       Print "Sunrise today (" + IIf(uLocale.bDaylightLightSavingsActive = False,"standard","daylight savings") + " time) is " + _
+             Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00")
+             
+   End If
+                                  
+   nSunriseOther = oCalendar.SunTransit(uLocale,nSerial)
+   oCalendar.GregorianFromSerial(nSunriseOther,uGreg1)
+
+       Print "Sun Transit today (" + IIf(uLocale.bDaylightLightSavingsActive = False,"standard","daylight savings") + " time) is " + _
+             Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00")
+   
+    oCalendar.Sunset(uLocale,nSunset,cCalendarClass.SUNRISE_SUNSET_TIME,nBogus,nSerial)
+    
+    If nBogus = True Then
+
+       Print "Sunset could not be calculated for today"
+       
+    Else
+    
+       oCalendar.GregorianFromSerial(nSunset,uGreg1)
+
+       Print "Sunset today (" + IIf(uLocale.bDaylightLightSavingsActive = False,"standard","daylight savings") + " time) is " + _
+             Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00")
+             
+   End If
+   
+    oCalendar.Sunset(uLocale,nSunriseOther,cCalendarClass.CIVIL_TWILIGHT_TIME,nBogus,nSerial)
+    
+    If nBogus = True Then
+
+       Print "Civil Twilight could not be calculated for today"
+       
+    Else
+    
+       oCalendar.GregorianFromSerial(nSunriseOther,uGreg1)
+
+       Print "Civil Twilight today (" + IIf(uLocale.bDaylightLightSavingsActive = False,"standard","daylight savings") + " time) is " + _
+             Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00")
+             
+   End If
+   
+    oCalendar.Sunset(uLocale,nSunriseOther,cCalendarClass.NAUTICAL_TWIGHTLIGHT_TIME,nBogus,nSerial)
+    
+    If nBogus = True Then
+
+       Print "Nautical Twilight could not be calculated for today"
+       
+    Else
+    
+       oCalendar.GregorianFromSerial(nSunriseOther,uGreg1)
+
+       Print "Nautical Twilight today (" + IIf(uLocale.bDaylightLightSavingsActive = False,"standard","daylight savings") + " time) is " + _
+             Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00")
+             
+   End If 
+   
+    oCalendar.Sunset(uLocale,nSunriseOther,cCalendarClass.ASTRONOMICAL_TWILIGHT_TIME,nBogus,nSerial)
+    
+    If nBogus = True Then
+
+       Print "Astronomical Twilight could not be calculated for today"
+       
+    Else
+    
+       oCalendar.GregorianFromSerial(nSunriseOther,uGreg1)
+
+       Print "Astronomical Twilight today (" + IIf(uLocale.bDaylightLightSavingsActive = False,"standard","daylight savings") + " time) is " + _
+             Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00")
+             
+   End If  
+   
+   oCalendar.GregorianFromSerial(nSunrise - nSunset,uGreg1)
+   Print "Total Daylight time is " + Str(uGreg1.Hour) + " hours " + Str(uGreg1.Minute) + " minutes"
+ 
+   Print ""
+   Print "Lunar distance is " + Str(oCalendar.LunarDistance(nSerial)) + " km"
+   Print "Solar distance is " + Str(oCalendar.SolarDistance(nSerial)) + " km"
+   nSolstice = oCalendar.SeasonalEquinox(uLocale,nYear,cCalendarClass.SPRING)
+   oCalendar.GregorianFromSerial(nSolstice,uGreg1)
+   Print "Spring solstice is " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) + _
+         " at "  + Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00") + ":" + Format(uGreg1.Second,"00") + "." + Str(uGreg1.Millisecond)
+   nSolstice = oCalendar.SeasonalEquinox(uLocale,nYear,cCalendarClass.SUMMER)
+   oCalendar.GregorianFromSerial(nSolstice,uGreg1)
+   Print "Summer solstice is " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) + _
+         " at "  + Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00") + ":" + Format(uGreg1.Second,"00") + "." + Str(uGreg1.Millisecond)
+   nSolstice = oCalendar.SeasonalEquinox(uLocale,nYear,cCalendarClass.AUTUMN)
+   oCalendar.GregorianFromSerial(nSolstice,uGreg1)
+   Print "Autumn solstice is " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) + _
+         " at "  + Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00") + ":" + Format(uGreg1.Second,"00") + "." + Str(uGreg1.Millisecond)
+   nSolstice = oCalendar.SeasonalEquinox(uLocale,nYear,cCalendarClass.WINTER)
+   oCalendar.GregorianFromSerial(nSolstice,uGreg1)
+   Print "Winter solstice is " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) + _
+         " at "  + Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00") + ":" + Format(uGreg1.Second,"00") + "." + Str(uGreg1.Millisecond)
+   oCalendar.LunarIllumination (uLocale,nSerial,nIllumination,nWaxing,nCrescent)
+   Print IIf(nWaxing = True,"Waxing","Waning") + IIf(nCrescent = True," Crescent"," Gibbous") + " Moon is " + Str(nIllumination * 100) + _
+         "% illuminated"
+   uDestination.Latitude = 21.32583
+   uDestination.Longitude = -157.9217
+   nDistance = oCalendar.GreatCircleDistance(uLocale,uDestination)
+   Print "Distance to Honolulu, Hawaii is " + Str(nDistance) + " km or " + _
+         Str(oCalendar.KilometersToMiles(nDistance)) + " miles"
+   Print "Bearing to Honolulu, Hawaii is " + Str(oCalendar.CompassBearing(uLocale,uDestination))
+   Print ""
+   Print "Moon Phases this month..."
+   
+' Moon Phases this month
+
+    uGreg1.Month = uGregToday.Month
+    uGreg1.Day = 1
+    uGreg1.Year = uGregToday.Year
+    nMonthBegin = oCalendar.SerialFromGregorian(uGreg1)
+    uGreg1.Day = oCalendar.GregorianDaysInMonth(uGreg1.Month,uGreg1.Year)
+    nMonthEnd = oCalendar.SerialFromGregorian(uGreg1)
+    oCalendar.LunarPhases(nMonthBegin,nMonthEnd,uLocale,arPhases())
+
+    For iIndex = 0 To UBound(arPhases)
+    
+        oCalendar.GregorianFromSerial(arPhases(iIndex).LunarSerialTime,uGreg1)
+        Select Case arPhases(iIndex).Phase
+        
+           Case cCalendarClass.NEWMOON
+           
+              sLunarPhase = "New Moon"
+              
+           Case cCalendarClass.FIRSTQUARTERMOON
+           
+              sLunarPhase = "First Quarter Moon"
+              
+           Case cCalendarClass.FULLMOON
+           
+              sLunarPhase = "Full Moon"
+              
+           Case Else
+           
+              sLunarPhase = "Last Quarter Moon"
+              
+        End Select
+        Print sLunarPhase + " on  " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) + " at " + _
+              Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00") + ":" + Format(uGreg1.Second,"00") + "." + Str(uGreg1.Millisecond)
+    
+    Next
+    Print ""
+
+' Chinese Holidays
+
+    ReDim arRules(0 To 12)
+    
+    arRules(0).Name = "Chinese New Year"    
+    arRules(0).Month = 1
+    arRules(0).Day = 1
+    arRules(0).Year = nYear
+    arRules(0).RuleClass = cCalendarClass.CHINESE_RULES
+    arRules(0).Rule = cCalendarClass.NO_RULES
+    arRules(0).NonBusinessDate = False
+    
+    arRules(1).Name = "Lantern Festival"    
+    arRules(1).Month = 1
+    arRules(1).Day = 15
+    arRules(1).Year = nYear
+    arRules(1).RuleClass = cCalendarClass.CHINESE_RULES
+    arRules(1).Rule = cCalendarClass.NO_RULES
+    arRules(1).NonBusinessDate = False
+    
+    arRules(2).Name = "Blue Dragon Festival"    
+    arRules(2).Month = 2
+    arRules(2).Day = 2
+    arRules(2).Year = nYear
+    arRules(2).RuleClass = cCalendarClass.CHINESE_RULES
+    arRules(2).Rule = cCalendarClass.NO_RULES
+    arRules(2).NonBusinessDate = False
+    
+    arRules(3).Name = "Ching Ming Festival"    
+    arRules(3).Year = nYear
+    arRules(3).RuleClass = cCalendarClass.CHINESE_RULES
+    arRules(3).Rule = cCalendarClass.CHINESE_QINGMING
+    arRules(3).NonBusinessDate = False
+    
+    arRules(4).Name = "Shangsi Festival"    
+    arRules(4).Month = 3
+    arRules(4).Day = 3
+    arRules(4).Year = nYear
+    arRules(4).RuleClass = cCalendarClass.CHINESE_RULES
+    arRules(4).Rule = cCalendarClass.NO_RULES
+    arRules(4).NonBusinessDate = False
+    
+    arRules(5).Name = "Dragon Boat Festival"    
+    arRules(5).Month = 5
+    arRules(5).Day = 5
+    arRules(5).Year = nYear
+    arRules(5).RuleClass = cCalendarClass.CHINESE_RULES
+    arRules(5).Rule = cCalendarClass.NO_RULES
+    arRules(5).NonBusinessDate = False
+    
+    arRules(6).Name = "Qixi Festival"    
+    arRules(6).Month = 7
+    arRules(6).Day = 7
+    arRules(6).Year = nYear
+    arRules(6).RuleClass = cCalendarClass.CHINESE_RULES
+    arRules(6).Rule = cCalendarClass.NO_RULES
+    arRules(6).NonBusinessDate = False
+    
+    arRules(7).Name = "Ghost Festival"    
+    arRules(7).Month = 7
+    arRules(7).Day = 15
+    arRules(7).Year = nYear
+    arRules(7).RuleClass = cCalendarClass.CHINESE_RULES
+    arRules(7).Rule = cCalendarClass.NO_RULES
+    arRules(7).NonBusinessDate = False
+    
+    arRules(8).Name = "Mid Autumn Festival"    
+    arRules(8).Month = 8
+    arRules(8).Day = 15
+    arRules(8).Year = nYear
+    arRules(8).RuleClass = cCalendarClass.CHINESE_RULES
+    arRules(8).Rule = cCalendarClass.NO_RULES
+    arRules(8).NonBusinessDate = False
+    
+    arRules(9).Name = "Double Nine Festival"    
+    arRules(9).Month = 9
+    arRules(9).Day = 9
+    arRules(9).Year = nYear
+    arRules(9).RuleClass = cCalendarClass.CHINESE_RULES
+    arRules(9).Rule = cCalendarClass.NO_RULES
+    arRules(9).NonBusinessDate = False
+    
+    arRules(10).Name = "Spirit Festival"    
+    arRules(10).Month = 10
+    arRules(10).Day = 15
+    arRules(10).Year = nYear
+    arRules(10).RuleClass = cCalendarClass.CHINESE_RULES
+    arRules(10).Rule = cCalendarClass.NO_RULES
+    arRules(10).NonBusinessDate = False
+    
+    arRules(11).Name = "Winter Solstice"    
+    arRules(11).Year = nYear
+    arRules(11).RuleClass = cCalendarClass.CHINESE_RULES
+    arRules(11).Rule = cCalendarClass.CHINESE_WINTERSOLSTICE
+    arRules(11).NonBusinessDate = False
+    
+    arRules(12).Name = "Laba Festival"    
+    arRules(12).Month = 12
+    arRules(12).Day = 8
+    arRules(12).Year = nYear
+    arRules(12).RuleClass = cCalendarClass.CHINESE_RULES
+    arRules(12).Rule = cCalendarClass.NO_RULES
+    arRules(12).NonBusinessDate = False   
+   
+    oCalendar.DateCalculation(arRules())
+
+    Print "Chinese Date calculations"
+    
+    For iIndex = 0 To UBound(arRules)
+    
+        oCalendar.GregorianFromSerial(arRules(iIndex).ObservedDays1,uGreg1)
+        oCalendar.GregorianFromSerial(arRules(iIndex).ObservedDays2,uGreg2)
+        Print arRules(iIndex).Name + " - " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) + _
+              IIf(arRules(iIndex).Observed = True, _ 
+                 IIf(arRules(iIndex).ObservedDays1 = arRules(iIndex).ObservedDays2,""," (Observed on " + _ 
+                    Str(uGreg2.Month) + "/" + Format(uGreg2.Day,"00") + "/" + Str(uGreg2.Year) + ")"), " (Not Observed)") 
+    
+    Next
