@@ -30,7 +30,6 @@ Dim sChineseYearAugury      as String
 Dim sLunarPhase             as String
 Dim nCrescent               as BOOLEAN
 Dim nWaxing                 as BOOLEAN
-Dim nIllumination           as Double
 Dim nDistance               as Double
 Dim nMonthBegin             as LongInt
 Dim nMonthEnd               as LongInt
@@ -408,9 +407,6 @@ Dim nMonthEnd               as LongInt
    oCalendar.GregorianFromSerial(nSolstice,uGreg1)
    Print "Winter solstice is " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) + _
          " at "  + Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00") + ":" + Format(uGreg1.Second,"00") + "." + Str(uGreg1.Millisecond)
-   oCalendar.LunarIllumination (uLocale,nSerial,nIllumination,nWaxing,nCrescent)
-   Print IIf(nWaxing = True,"Waxing","Waning") + IIf(nCrescent = True," Crescent"," Gibbous") + " Moon is " + Str(nIllumination * 100) + _
-         "% illuminated"
    uDestination.Latitude = 21.32583
    uDestination.Longitude = -157.9217
    nDistance = oCalendar.GreatCircleDistance(uLocale,uDestination)
