@@ -28,8 +28,6 @@ Dim sChineseYearName        as String
 Dim sChineseMonthName       as String
 Dim sChineseYearAugury      as String
 Dim sLunarPhase             as String
-Dim nCrescent               as BOOLEAN
-Dim nWaxing                 as BOOLEAN
 Dim nDistance               as Double
 Dim nMonthBegin             as LongInt
 Dim nMonthEnd               as LongInt
