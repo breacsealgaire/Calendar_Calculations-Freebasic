@@ -11311,7 +11311,11 @@ End Function
 ' ========================================================================================
 Private Function cCalendar.cmCeiling(ByVal x as Double) as Long
 
-    Function = cmFloor(x * -1) * -1
+' Small performance boost
+
+'    Function = cmFloor(x * -1) * -1
+
+    Function = -cmFloor(-x)
 
 End Function
 ' ========================================================================================
