@@ -1,5 +1,5 @@
 #Include Once "string.bi"
-#Include Once "cCalendar.inc"
+#Include Once "cCalendar\cCalendar.bi"
 
 Dim oCalendar               as cCalendar
 Dim sToday                  as String
@@ -31,6 +31,9 @@ Dim sLunarPhase             as String
 Dim nDistance               as Double
 Dim nMonthBegin             as LongInt
 Dim nMonthEnd               as LongInt
+Dim nIllumination           as double
+Dim bWaxing                 as BOOLEAN
+Dim bCrescent               as BOOLEAN
 
     sToday = Date
     sTime = Time
@@ -389,6 +392,8 @@ Dim nMonthEnd               as LongInt
    Print ""
    Print "Lunar distance is " + Str(oCalendar.LunarDistance(nSerial)) + " km"
    Print "Solar distance is " + Str(oCalendar.SolarDistance(nSerial)) + " km"
+   oCalendar.LunarIllumination(nSerial,uLocale.Zone,nIllumination,bWaxing,bCrescent)
+   Print "Lunar illumination is " + str(nIllumination) + "%" + " (Standard Time)" + ",Crescent=" + str(bCrescent) + ",Waxing=" + str(bWaxing)
    nSolstice = oCalendar.SeasonalEquinox(uLocale,nYear,cCalendarClass.SPRING)
    oCalendar.GregorianFromSerial(nSolstice,uGreg1)
    Print "Spring solstice is " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) + _
@@ -570,3 +575,8 @@ Dim nMonthEnd               as LongInt
                     Str(uGreg2.Month) + "/" + Format(uGreg2.Day,"00") + "/" + Str(uGreg2.Year) + ")"), " (Not Observed)") 
     
     Next
+
+Print "press q to quit"
+Do
+     Sleep 1, 1
+Loop Until Inkey = "q"
