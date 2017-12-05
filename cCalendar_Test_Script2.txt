@@ -1,5 +1,5 @@
 #Include Once "string.bi"
-#Include Once "cCalendar.inc"
+#Include Once "cCalendar\cCalendar.bi"
 
 Dim oCalendar            as cCalendar
 Dim sToday               as String 
@@ -16,6 +16,7 @@ Dim iIndex               as Long
 Dim nYear                as Long
 Dim bBusinessWeekday     as BOOLEAN
 Dim arNonBusinessDates() as LongInt
+Dim sToday          as String
 
     sToday = Date
     uGregToday.Month = Val(Left(sToday,2))
