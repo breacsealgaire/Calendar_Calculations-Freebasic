@@ -1,0 +1,11 @@
+01/12/2017
+
+Version 1.00 Initial Release
+
+12/04/2017
+
+Version 1.01
+
+1. Renamed cCalendar.inc to cCalendar.bi
+2. FB include folder cCalendar added
+3. Function LunarIllumination added

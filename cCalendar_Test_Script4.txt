@@ -1,5 +1,5 @@
 #Include Once "string.bi"
-#Include Once "cCalendar.inc"
+#Include Once "cCalendar\cCalendar.bi"
 
 Dim oCalendar               as cCalendar
 Dim sToday                  as String
@@ -673,3 +673,8 @@ Dim arLunarTimes()          as LUNAR_RISE_AND_SET
         Print arRules(iIndex).Name + " - " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) 
     
     Next
+
+Print "press q to quit"
+Do
+     Sleep 1, 1
+Loop Until Inkey = "q"
