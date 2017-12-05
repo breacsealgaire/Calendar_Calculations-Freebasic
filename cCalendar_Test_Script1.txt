@@ -1,5 +1,5 @@
 #Include Once "string.bi"
-#Include Once "cCalendar.inc"
+#Include Once "cCalendar\cCalendar.bi"
 
 Dim oCalendar       as cCalendar
 Dim uGregIn         as GREGORIAN_DATE
@@ -15,13 +15,17 @@ Dim nHistoryMonth   as Short
 Dim nHistoryYear    as Long
 Dim uTime           as TIME_DURATION
 Dim nExcel          as Double
+Dim sToday          as String
+DIM sTime           AS string
 
-      uGregIn.Month = 9
-      uGregIn.Day = 9
-      uGregIn.Year = 2016
-      uGregIn.Hour = 19
-      uGregIn.Minute = 30
-      uGregIn.Second = 45
+      sToday = Date
+      sTime = Time
+      uGregIn.Month = Val(Left(sToday,2))
+      uGregIn.Day = Val(Mid(sToday,4,2))
+      uGregIn.Year = Val(Right(sToday,4))
+      uGregIn.Hour = Val(Left(sTime,2))
+      uGregIn.Minute = Val(Mid(sTime,4,2))
+      uGregIn.Second = Val(Right(sTime,2))
       uGregIn.Millisecond = 350
       nSerial = oCalendar.SerialFromGregorian(uGregIn)
       oCalendar.SerialToTime(nSerial,uTime)
@@ -113,3 +117,8 @@ Dim nExcel          as Double
       Print "Excel from Serial (1904 base)=" + Str(nExcel)
       nSerial = oCalendar.SerialFromExcel(nExcel,True)
       Print "Serial from Excel (1904 base)=" + Str(nSerial)
+
+Print "press q to quit"
+Do
+     Sleep 1, 1
+Loop Until Inkey = "q"
