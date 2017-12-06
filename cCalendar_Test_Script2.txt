@@ -16,7 +16,6 @@ Dim iIndex               as Long
 Dim nYear                as Long
 Dim bBusinessWeekday     as BOOLEAN
 Dim arNonBusinessDates() as LongInt
-Dim sToday          as String
 
     sToday = Date
     uGregToday.Month = Val(Left(sToday,2))
@@ -426,3 +425,8 @@ Dim sToday          as String
         Print arRules(iIndex).Name + " - " + Str(uGreg1.Month) + "/" + Str(uGreg1.Day) + "/" + Str(uGreg1.Year)
     
     Next
+
+Print "press q to quit"
+Do
+     Sleep 1, 1
+Loop Until Inkey = "q"
