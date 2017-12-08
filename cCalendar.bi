@@ -1,7 +1,7 @@
 ' ########################################################################################
 ' File: cCalendar.bi
 ' Contents: Algorithms for various calendars of current and historical interest.
-' Version: 1.01
+' Version: 1.02
 ' Compiler: FreeBasic 32 & 64-bit
 ' Copyright (c) 2016 Rick Kelly
 ' Credits - Calendrical Calculations Third Edition, Nachum Dershowitz and Edward M. Reingold
@@ -1250,9 +1250,9 @@ Type cCalendar Extends Object
       Declare Function cmLunarPhaseAtOrAfter(ByVal nMoment as Double, _
                                              ByVal nTargetLongitude as Double) as Double
       Declare Function cmNewMoonAfter(ByVal nMoment as Double) as Double
-      Declare Function cmNewMoonBefore(nMoment as Double) as Double
+      Declare Function cmNewMoonBefore(BYVAL nMoment as Double) as Double
       Declare Function cmLunarPhase(ByVal nMoment as Double) as Double
-      Declare Function cmLunarLongitude(nMoment as Double) as Double
+      Declare Function cmLunarLongitude(BYVAL nMoment as Double) as Double
       Declare Function cmSumLunarPeriods(ByRef nE as Double, _
                                          ByRef nElongation as Double, _
                                          ByRef nSolarAnomaly as Double, _
@@ -1268,7 +1268,7 @@ Type cCalendar Extends Object
       Declare Function cmSolarAnomaly(ByRef nC as Double) as Double
       Declare Function cmLunarAnomaly(ByRef nC as Double) as Double
       Declare Function cmMoonNode(ByRef nC as Double) as Double
-      Declare Function cmNthNewMoon(nNthMoon as Long) as Double
+      Declare Function cmNthNewMoon(BYVAL nNthMoon as Long) as Double
       Declare Function cmCorrectionAdjustments(ByRef dtE as Double, _
                                                ByRef dtSolarAnomaly as Double, _
                                                ByRef dtLunarAnomaly as Double, _
@@ -1373,11 +1373,11 @@ Type cCalendar Extends Object
       Declare Function cmFloor(ByVal x as Double) as Long
       Declare Function cmSignum(ByVal nAny as Double) as Long
       Declare Sub cmSumOneMonth(ByVal nMonth as Long, _
-                                uHistory as HISTORY_MONTHS, _
+                                BYREF uHistory as HISTORY_MONTHS, _
                                 ByRef nSummary as Double)
       Declare Sub cmClearSummary(arSummary() as Double)
       Declare Sub cmShiftHistory(ByVal nMonth as Short, _
-                                 uHistory as HISTORY_MONTHS)
+                                 BYREF uHistory as HISTORY_MONTHS)
       Declare Function cmMomentToSerial(ByRef nMoment as Double) as LongInt
       Declare Function cmSerialToMoment(ByVal nSerial as LongInt) as Double
 
@@ -5105,7 +5105,7 @@ Dim nObservedDays2  as LongInt
 
        Case True
          
-          If uCalc.Observed = True AndAlso nObservedDays1 <> nObservedDays2 Then
+          If CLNG(uCalc.Observed) = True AndAlso nObservedDays1 <> nObservedDays2 Then
 
              nObservedDays1 = nObservedDays2
 
@@ -6180,7 +6180,7 @@ Dim bLoop                      as BOOLEAN
 
 ' Look in preceding month
 
-        If nMidMonth <> nMonth OrElse (bMidLeapMonth = True AndAlso bLeapMonth = False) Then
+        If nMidMonth <> nMonth OrElse (CLNG(bMidLeapMonth) = True AndAlso CLNG(bLeapMonth) = False) Then
 
             nAdjustment = cmMod(nLunarDay + 15,30) - 15
 
@@ -6486,7 +6486,7 @@ Private Function cCalendar.cmAlmostEqual (ByVal nMonth1 as Short, _
                                           ByVal nMonth2 as Short, _
                                           ByVal bLeapMonth2 as BOOLEAN) as Long
 
-    If bLeapMonth1 = bLeapMonth2 AndAlso nMonth1 = nMonth2 Then
+    If CLNG(bLeapMonth1) = CLNG(bLeapMonth2) AndAlso nMonth1 = nMonth2 Then
 
         Function = True
 
@@ -6527,11 +6527,11 @@ Dim bReturn        as BOOLEAN
 
         Case Else
 
-            If (bLeapMonth1 = True AndAlso bLeapMonth2 = False) OrElse _
-                    (bLeapMonth1 = bLeapMonth2 AndAlso _
+            If (CLNG(bLeapMonth1) = True AndAlso CLNG(bLeapMonth2) = False) OrElse _
+                    (CLNG(bLeapMonth1) = CLNG(bLeapMonth2) AndAlso _
                         (nDay1 < nDay2 OrElse _
                             (nDay1 = nDay2 AndAlso _
-                                (bLeapDay1 = False OrElse bLeapDay2 = True)))) Then
+                                (CLNG(bLeapDay1) = False OrElse CLNG(bLeapDay2) = True)))) Then
 
                 bReturn = True
 
@@ -7269,7 +7269,7 @@ Dim nJulianYear     as Long
         
         Case Else
         
-            If nJulianMonth <> cCalendarClass.FEBRUARY OrElse cmJulianLeapYear(nJulianYear) = False Then
+            If nJulianMonth <> cCalendarClass.FEBRUARY OrElse CLNG(cmJulianLeapYear(nJulianYear)) = False Then
 
                 nMonth = cmAMod(nJulianMonth + 1,12)
                 If nMonth <> 1 Then
@@ -7347,7 +7347,7 @@ Dim nAdjust as Short
             
     End Select
     
-    If cmJulianLeapYear(nYear) = True AndAlso _
+    If CLNG(cmJulianLeapYear(nYear)) = True AndAlso _
             nMonth = cCalendarClass.MARCH AndAlso _
             nEvent = cCalendarClass.KALENDS AndAlso _
             16 >= nCount AndAlso _
@@ -7902,7 +7902,7 @@ Dim nEstimated         as Long
 
     Else
 
-       If bLeapMonth = True AndAlso nMonth0 = 12 Then
+       If CLNG(bLeapMonth) = True AndAlso nMonth0 = 12 Then
 
           nYear = nYear0 + 1
 
@@ -8689,7 +8689,7 @@ Dim nPriorNewMoon          as Long
     nNextNewMoon = cmChineseNewMoonOnOrAfter(nNewYear + ((nMonth - 1) * 29),nCountry)
     cmChineseFromDays(nNextNewMoon,nWorkCycle,nWorkYear,nWorkMonth,nWorkLeapMonth,nWorkDay,nCountry)
 
-    If nWorkMonth = nMonth AndAlso nWorkLeapMonth = bLeapMonth Then
+    If nWorkMonth = nMonth AndAlso CLNG(nWorkLeapMonth) = CLNG(bLeapMonth) Then
 
         nPriorNewMoon = nNextNewMoon
 
@@ -9191,7 +9191,7 @@ End Function
 ' Add one month to running summary total
 ' ========================================================================================
 Private Sub cCalendar.cmSumOneMonth (ByVal nMonth as Long, _
-                                     uHistory as HISTORY_MONTHS, _
+                                     BYREF uHistory as HISTORY_MONTHS, _
                                      ByRef nSummary as Double)
 
     nSummary = nSummary + uHistory.Month(nMonth)
@@ -9215,7 +9215,7 @@ End Sub
 ' Save and Clear Current History
 ' ========================================================================================
 Private Sub cCalendar.cmShiftHistory (ByVal nMonth as Short, _
-                                      uHistory as HISTORY_MONTHS)
+                                      BYREF uHistory as HISTORY_MONTHS)
 
     uHistory.Month(nMonth) = uHistory.Month(0)
     uHistory.Month(0) = 0
@@ -10227,7 +10227,7 @@ End Function
 ' ========================================================================================
 ' Return New Moon preceding nMoment
 ' ========================================================================================
-Private Function cCalendar.cmNewMoonBefore (nMoment as Double) as Double
+Private Function cCalendar.cmNewMoonBefore (BYVAL nMoment as Double) as Double
 
 ' There are slight differences between the approximations
 ' used by cmNthNewMoon and cmLunarPhase (which in turn uses
@@ -10298,7 +10298,7 @@ End Function
 ' ========================================================================================
 ' Return the Longitude of the Moon
 ' ========================================================================================
-Private Function cCalendar.cmLunarLongitude (nMoment as Double) as Double
+Private Function cCalendar.cmLunarLongitude (BYVAL nMoment as Double) as Double
 
 Dim nC                 as Double  'Julian Centuries
 Dim nMeanMoon          as Double
@@ -10466,7 +10466,7 @@ End Function
 ' Moment (at Greenwich) of nth new moon after (or before if nNthMoon is negative)
 ' the new moon of January 11, 1.
 ' ========================================================================================
-Private Function cCalendar.cmNthNewMoon (nNthMoon as Long) as Double
+Private Function cCalendar.cmNthNewMoon (BYVAL nNthMoon as Long) as Double
 
 Dim nC                     as Double
 Dim nC2                    as Double
@@ -11244,7 +11244,7 @@ Private Function cCalendar.cmDaylightSavings (ByVal nSerial as LongInt, _
     uLocale.bDaylightLightSavingsActive = False
                                               
     If nSerial >= uLocale.DaylightSavingsBegins AndAlso nSerial <  uLocale.DaylightSavingsEnds _
-       AndAlso uLocale.bApplyDaylightSavings = True Then
+       AndAlso CLNG(uLocale.bApplyDaylightSavings) = True Then
 
        nSerial = nSerial _
                + (Abs(uLocale.DaylightSavingsMinutes) _
