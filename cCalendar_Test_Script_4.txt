@@ -1,0 +1,769 @@
+#Include Once "string.bi"
+#Include Once "cCalendar\cCalendar.bi"
+
+Dim oCalendar               as cCalendar
+Dim sToday                  as String
+Dim sTime                   as String 
+Dim arRules()               as DATE_CALCULATION
+Dim uGreg1                  as GREGORIAN_DATE
+Dim uGreg2                  as GREGORIAN_DATE
+Dim uGregToday              as GREGORIAN_DATE
+Dim uJulian                 as JULIAN_DATE
+Dim uISO                    as ISO_DATE
+Dim uChinese                as CHINESE_DATE
+Dim uHebrew                 as HEBREW_DATE
+Dim uIslamic                as ISLAMIC_DATE
+Dim uPersian                as PERSIAN_DATE
+Dim uHinduLunar             as HINDU_LUNAR_DATE
+Dim uHinduSolar             as HINDU_SOLAR_DATE
+Dim uCoptic                 as COPTIC_DATE
+Dim uEthiopic               as ETHIOPIC_DATE
+Dim uRoman                  as ROMAN_DATE
+Dim uEgyptian               as EGYPTIAN_DATE
+Dim uArmenian               as ARMENIAN_DATE
+Dim uBahai                  as BAHAI_DATE
+Dim uTibetan                as TIBETAN_DATE
+Dim uSamaritan              as SAMARITAN_DATE 
+Dim uLocale                 as LOCATION_LOCALE
+Dim nSerial                 as LongInt
+Dim iIndex                  as Long
+Dim nYear                   as Long
+Dim sChineseYearName        as String
+Dim sChineseMonthName       as String
+Dim sChineseYearAugury      as String
+Dim uHebrewBirth            as HEBREW_DATE
+Dim uHebrewBirthDay         as HEBREW_DATE
+Dim arLunarTimes()          as LUNAR_RISE_AND_SET
+
+    sToday = Date
+    sTime = Time
+    uGregToday.Month =  Val(Left(sToday,2))
+    uGregToday.Day = Val(Mid(sToday,4,2))
+    uGregToday.Year = Val(Right(sToday,4))
+    uGregToday.Hour = Val(Left(sTime,2))
+    uGregToday.Minute = Val(Mid(sTime,4,2))
+    uGregToday.Second = Val(Right(sTime,2))
+
+    nYear = uGregToday.Year
+    
+    ReDim arRules(0 To 1)
+    
+' Daylight Savings rules for most of USA
+  
+    arRules(0).Name = "Daylight Savings Begins"    
+    arRules(0).Month = cCalendarClass.MARCH
+    arRules(0).Day = 0
+    arRules(0).Year = nYear
+    arRules(0).RuleClass = cCalendarClass.GREGORIAN_RULES
+    arRules(0).Rule = cCalendarClass.SECOND_WEEK
+    arRules(0).Weekday = cCalendarClass.SUNDAY
+    arRules(0).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(0).SundayRule = cCalendarClass.NO_SUNDAY_RULE
+    arRules(0).YearRule = cCalendarClass.ALL_YEARS
+    arRules(0).NonBusinessDate = False
+    
+    arRules(1).Name = "Daylight Savings Ends"    
+    arRules(1).Month = cCalendarClass.NOVEMBER
+    arRules(1).Day = 0
+    arRules(1).Year = nYear
+    arRules(1).RuleClass = cCalendarClass.GREGORIAN_RULES
+    arRules(1).Rule = cCalendarClass.FIRST_WEEK
+    arRules(1).Weekday = cCalendarClass.SUNDAY
+    arRules(1).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(1).SundayRule = cCalendarClass.NO_SUNDAY_RULE
+    arRules(1).YearRule = cCalendarClass.ALL_YEARS
+    arRules(1).NonBusinessDate = False
+    
+    oCalendar.DateCalculation(arRules())
+    uLocale.Zone = -9                       ' Standard Time
+    uLocale.Elevation = 46
+    uLocale.Latitude = oCalendar.DecimalDegrees(61,10,26.9634)
+    uLocale.Longitude = oCalendar.DecimalDegrees(-149,59,53.4791)
+    uLocale.bApplyDaylightSavings = True
+    uLocale.DaylightSavingsBegins = arRules(0).ObservedDays1 + cCalendarClass.ONE_HOUR * 2
+    uLocale.DaylightSavingsEnds = arRules(1).ObservedDays1  + cCalendarClass.ONE_HOUR * 2
+    uLocale.DaylightSavingsMinutes = 60
+    
+    nSerial = oCalendar.SerialFromGregorian(uGregToday)
+    oCalendar.GregorianFromSerial(nSerial,uGreg1)
+    oCalendar.JulianFromSerial(nSerial,uJulian)
+    oCalendar.ISOFromSerial(nSerial,uISO)
+    oCalendar.ChineseFromSerial(nSerial,uChinese)
+    oCalendar.HebrewFromSerial(nSerial,uHebrew)
+    oCalendar.IslamicFromSerial(nSerial,uIslamic)
+    oCalendar.PersianFromSerial(nSerial,uPersian)
+    oCalendar.HinduLunarFromSerial(nSerial,uHinduLunar)
+    oCalendar.HinduSolarFromSerial(nSerial,uHinduSolar)
+    oCalendar.CopticFromSerial(nSerial,uCoptic)
+    oCalendar.EthiopicFromSerial(nSerial,uEthiopic)
+    oCalendar.EgyptianFromSerial(nSerial,uEgyptian)
+    oCalendar.ArmenianFromSerial(nSerial,uArmenian)
+    oCalendar.BahaiFromSerial(nSerial,uBahai)
+    oCalendar.RomanFromSerial(nSerial,uRoman)
+    oCalendar.TibetanFromSerial(nSerial,uTibetan)
+    oCalendar.SamaritanFromSerial(nSerial,uSamaritan)
+    
+' Chinese year marriage augury
+
+    Select Case uChinese.YearAugury
+
+       Case cCalendarClass.CHINESE_WIDOW_YEAR
+       
+          sChineseYearAugury = ", Widow Year) "
+          
+       Case cCalendarClass.CHINESE_BLIND_YEAR
+       
+          sChineseYearAugury = ", Blind Year) "
+          
+       Case cCalendarClass.CHINESE_BRIGHT_YEAR
+       
+          sChineseYearAugury = ", Bright Year) "
+          
+       Case Else    
+
+          sChineseYearAugury = ", Double Bright Year) "   
+    
+    End Select
+    
+' Chinese Year and Month names
+
+    Select Case uChinese.YearAnimal
+    
+       Case cCalendarClass.CHINESE_RAT
+       
+          sChineseYearName = " (Rat" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_OX
+       
+          sChineseYearName = " (Ox" + sChineseYearAugury
+ 
+       Case cCalendarClass.CHINESE_TIGER
+       
+          sChineseYearName = " (Tiger" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_RABBIT
+       
+          sChineseYearName = " (Rabbit" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_DRAGON
+       
+          sChineseYearName = " (Dragon" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_SNAKE
+       
+          sChineseYearName = " (Snake" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_HORSE
+       
+          sChineseYearName = " (Horse" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_GOAT
+       
+          sChineseYearName = " (Goat" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_MONKEY
+       
+          sChineseYearName = " (Monkey" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_ROOSTER
+       
+          sChineseYearName = " (Rooster" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_DOG
+       
+          sChineseYearName = " (Dog" + sChineseYearAugury
+          
+       Case cCalendarClass.CHINESE_PIG
+       
+          sChineseYearName = " (Pig" + sChineseYearAugury
+          
+       Case Else
+       
+          sChineseYearName = " (Unknown" + sChineseYearAugury
+          
+    End Select
+    
+' Chinese Leap Months do not have names
+
+    If uChinese.LeapMonth = True Then
+    
+       sChineseMonthName = ""
+       
+    Else
+
+    Select Case uChinese.MonthAnimal
+    
+       Case cCalendarClass.CHINESE_RAT
+       
+          sChineseMonthName = " (Zi Rat) "
+          
+       Case cCalendarClass.CHINESE_OX
+       
+          sChineseMonthName = " (Chou Ox) "
+ 
+       Case cCalendarClass.CHINESE_TIGER
+       
+          sChineseMonthName = " (Yin Tiger) "
+          
+       Case cCalendarClass.CHINESE_RABBIT
+       
+          sChineseMonthName = " (Mao Rabbit) "
+          
+       Case cCalendarClass.CHINESE_DRAGON
+       
+          sChineseMonthName = " (Chen Dragon) "
+          
+       Case cCalendarClass.CHINESE_SNAKE
+       
+          sChineseMonthName = " (Si Snake) "
+          
+       Case cCalendarClass.CHINESE_HORSE
+       
+          sChineseMonthName = " (Wu Horse) "
+          
+       Case cCalendarClass.CHINESE_GOAT
+       
+          sChineseMonthName = " (Wei Sheep) "
+          
+       Case cCalendarClass.CHINESE_MONKEY
+       
+          sChineseMonthName = " (Shen Monkey) "
+          
+       Case cCalendarClass.CHINESE_ROOSTER
+       
+          sChineseMonthName = " (You Rooster) "
+          
+       Case cCalendarClass.CHINESE_DOG
+       
+          sChineseMonthName = " (Xu Dog) "
+          
+       Case cCalendarClass.CHINESE_PIG
+       
+          sChineseMonthName = " (Hai Pig) "
+          
+       Case Else
+       
+          sChineseMonthName = " (Unknown) "
+          
+    End Select    
+
+    End If         
+ 
+    Print "Today is..."
+    Print Str(nSerial) + " (Serial)"
+    Print Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) + _
+          " at " + Str(uGreg1.Hour) + ":" + Format(uGreg1.Minute,"00") + ":" + Format(uGreg1.Second,"00") + " (Gregorian)"
+    Print Str(uJulian.Month) + "/" + Format(uJulian.Day,"00") + "/" + Str(uJulian.Year) + " (Julian)"
+    Print "Day " + Str(uISO.Day) + " Week " + Str(uISO.Week) + " Year " + Str(uISO.Year) + " (Year has " + _
+       Str(IIf(uISO.LongYear = False,52,53)) + " weeks)" + " (ISO)"
+    Print  "Cycle " + Str(uChinese.Cycle) + " Year " + Str(uChinese.Year) + sChineseYearName + " Month " + Str(uChinese.Month) + _
+       "." + Str(uChinese.LeapMonth) + sChineseMonthName + " Day " + Str(uChinese.Day) + " (Chinese)" 
+    Print Str(uHebrew.Month) + "." + Format(uHebrew.Day,"00") + "." + Str(uHebrew.Year) + _
+       IIf(uHebrew.SabbaticalYear = True, " (Sabbatical Year)","") + " (Hebrew)"
+    Print Str(uIslamic.Month) + "." + Format(uIslamic.Day,"00") + "." + Str(uIslamic.Year) + " (Islamic)"
+    Print Str(uPersian.Month) + "." + Format(uPersian.Day,"00") + "." + Str(uPersian.Year) + " (Persian)"
+    Print Str(uHinduLunar.Month) + "."  + Str(uHinduLunar.LeapMonth) + " " + Str(uHinduLunar.Day) + "." + Str(uHinduLunar.LeapDay) + _
+       " " + Str(uHinduLunar.Year) + " (Hindu Lunar)"
+    Print Str(uHinduSolar.Month) + "." + Format(uHinduSolar.Day,"00") + "." + Str(uHinduSolar.Year) + " (Hindu Solar)"
+    Print Str(uCoptic.Month) + "." + Format(uCoptic.Day,"00") + "." + Str(uCoptic.Year) + " (Coptic)"
+    Print Str(uEthiopic.Month) + "." + Format(uEthiopic.Day,"00") + "." + Str(uEthiopic.Year) + " (Ethiopic)"
+    Print Str(uEgyptian.Month) + "." + Format(uEgyptian.Day,"00") + "." + Str(uEgyptian.Year) + " (Egyptian)"
+    Print Str(uArmenian.Month) + "." + Format(uArmenian.Day,"00") + "." + Str(uArmenian.Year) + " (Armenian)"
+    Print "Cycle " + Str(uBahai.Cycle) + " " + Str(uBahai.Month) + "." + Format(uBahai.Day,"00") + "." + _
+       Str(uBahai.Year) +  " Kull-i-Shay " + Str(uBahai.Major) + " " + Str(uBahai.Era) + " B.E." + " (Bahai)"
+    Print Str(uRoman.Month) + "." + Str(uRoman.Year) + " " + IIf(uRoman.Count > 0,Str(uRoman.Count) + " days until ","") + _
+       IIf(uRoman.Event = cCalendarClass.KALENDS,"Kalends",IIf(uRoman.Event = cCalendarClass.NONES,"Nones","Ides")) + " (Roman)"
+    Print Str(uTibetan.Month) + "." + Str(uTibetan.LeapMonth) + "." + Str(uTibetan.Day) + "." + Str(uTibetan.LeapDay) + "." + Str(uTibetan.Year) + " (Tibetan)"
+    Print Str(uSamaritan.Month) + "." + Format(uSamaritan.Day,"00") + "." + Str(uSamaritan.Year) + " (Samaritan)" 
+    
+    Print ""
+    Print "Location is Ted Steven's International Airport, Anchorage Alaska"
+    Print ""
+    Print "Moon Rise and Set Today"
+    Print ""
+    oCalendar.LunarRiseAndSet(nSerial,nSerial,cCalendarClass.GEOCENTRIC,uLocale,arLunarTimes())
+    Print "Geocentric Times"
+    If UBound(arLunarTimes) < 0 Then
+
+       Print "Moon did not rise or set"
+   
+    Else
+
+       For iIndex = 0 To UBound(arLunarTimes)
+   
+           oCalendar.GregorianFromSerial(arLunarTimes(iIndex).LunarSerialTime,uGreg1) 
+           Print IIf(arLunarTimes(iIndex).RiseOrSet = cCalendarClass.MOONRISE,"Moonrise","Moonset") + " on " + _
+              Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) + " at " + _
+              Format(uGreg1.Hour,"00") + ":" + Format(uGreg1.Minute,"00") + " (" + _
+              IIf(arLunarTimes(iIndex).DaylightSavings = True,"Daylight Savings Time","Standard Time") + ")"   
+   
+      Next
+   
+    End If
+    Print ""
+    oCalendar.LunarRiseAndSet(nSerial,nSerial,cCalendarClass.TOPOCENTRIC,uLocale,arLunarTimes())
+    Print "Topocentric Times"
+    If UBound(arLunarTimes) < 0 Then
+
+       Print "Moon did not rise or set"
+   
+    Else
+
+       For iIndex = 0 To UBound(arLunarTimes)
+   
+           oCalendar.GregorianFromSerial(arLunarTimes(iIndex).LunarSerialTime,uGreg1) 
+           Print IIf(arLunarTimes(iIndex).RiseOrSet = cCalendarClass.MOONRISE,"Moonrise","Moonset") + " on " + _
+              Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) + " at " + _
+              Format(uGreg1.Hour,"00") + ":" + Format(uGreg1.Minute,"00") + " (" + _
+              IIf(arLunarTimes(iIndex).DaylightSavings = True,"Daylight Savings Time","Standard Time") + ")"   
+   
+      Next
+   
+    End If
+    Print ""
+    uHebrewBirth.Month = cCalendarClass.ADAR
+    uHebrewBirth.Day = 7
+    uHebrewBirth.Year = 5748
+    oCalendar.HebrewBirthDay(uHebrewBirth,uHebrew.Year,uHebrewBirthDay)
+    oCalendar.HebrewBirthDayInGregorian(uHebrewBirth,nYear,uGreg1,uGreg2)
+    Print "For some one born on ADAR 7, 5748 (Hebrew), their birthday (Hebrew) this year " 
+    Print "is " + Str(uHebrewBirthDay.Month) + "." + Format(uHebrewBirthDay.Day,"00") + "." + Str(uHebrewBirthDay.Year) + _
+          " and their birthday(s) during Gregorian year " + Str(nYear) + " are " + _
+           Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) + _
+          IIf(uGreg2.Month <> 0," and " + Str(uGreg2.Month) + "/" + Format(uGreg2.Day,"00") + "/" + Str(uGreg2.Year),"")
+    Print ""
+
+' Hebrew Holidays
+
+    ReDim arRules(0 To 14)
+    
+    arRules(0).Name = "Rosh HaShana"    
+    arRules(0).Month = cCalendarClass.TISHRI
+    arRules(0).Day = 1
+    arRules(0).Year = nYear
+    arRules(0).RuleClass = cCalendarClass.HEBREW_RULES
+    arRules(0).Rule = cCalendarClass.NO_RULES
+    arRules(0).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(0).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(0).SundayRule = cCalendarClass.NO_SUNDAY_RULE
+    arRules(0).YearRule = cCalendarClass.ALL_YEARS
+    arRules(0).NonBusinessDate = False
+    
+    arRules(1).Name = "Yom Kippur"    
+    arRules(1).Month = cCalendarClass.TISHRI
+    arRules(1).Day = 10
+    arRules(1).Year = nYear
+    arRules(1).RuleClass = cCalendarClass.HEBREW_RULES
+    arRules(1).Rule = cCalendarClass.NO_RULES
+    arRules(1).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(1).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(1).SundayRule = cCalendarClass.NO_SUNDAY_RULE
+    arRules(1).YearRule = cCalendarClass.ALL_YEARS
+    arRules(1).NonBusinessDate = False
+    
+    arRules(2).Name = "Sukkot"    
+    arRules(2).Month = cCalendarClass.TISHRI
+    arRules(2).Day = 15
+    arRules(2).Year = nYear
+    arRules(2).RuleClass = cCalendarClass.HEBREW_RULES
+    arRules(2).Rule = cCalendarClass.NO_RULES
+    arRules(2).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(2).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(2).SundayRule = cCalendarClass.NO_SUNDAY_RULE
+    arRules(2).YearRule = cCalendarClass.ALL_YEARS
+    arRules(2).NonBusinessDate = False
+    
+    arRules(3).Name = "Sh'mini Atzeret"    
+    arRules(3).Month = cCalendarClass.TISHRI
+    arRules(3).Day = 22
+    arRules(3).Year = nYear
+    arRules(3).RuleClass = cCalendarClass.HEBREW_RULES
+    arRules(3).Rule = cCalendarClass.NO_RULES
+    arRules(3).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(3).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(3).SundayRule = cCalendarClass.NO_SUNDAY_RULE
+    arRules(3).YearRule = cCalendarClass.ALL_YEARS
+    arRules(3).NonBusinessDate = False
+    
+    arRules(4).Name = "Hanukkah"    
+    arRules(4).Month = cCalendarClass.KISLEV
+    arRules(4).Day = 25
+    arRules(4).Year = nYear
+    arRules(4).RuleClass = cCalendarClass.HEBREW_RULES
+    arRules(4).Rule = cCalendarClass.NO_RULES
+    arRules(4).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(4).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(4).SundayRule = cCalendarClass.NO_SUNDAY_RULE
+    arRules(4).YearRule = cCalendarClass.ALL_YEARS
+    arRules(4).NonBusinessDate = False
+    
+    arRules(5).Name = "Purim"    
+    arRules(5).Month = cCalendarClass.ADAR
+    arRules(5).Day = 14
+    arRules(5).Year = nYear
+    arRules(5).RuleClass = cCalendarClass.HEBREW_RULES
+    arRules(5).Rule = cCalendarClass.NO_RULES
+    arRules(5).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(5).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(5).SundayRule = cCalendarClass.NO_SUNDAY_RULE
+    arRules(5).YearRule = cCalendarClass.ALL_YEARS
+    arRules(5).NonBusinessDate = False
+    
+    arRules(6).Name = "Passover"    
+    arRules(6).Month = cCalendarClass.NISAN
+    arRules(6).Day = 15
+    arRules(6).Year = nYear
+    arRules(6).RuleClass = cCalendarClass.HEBREW_RULES
+    arRules(6).Rule = cCalendarClass.NO_RULES
+    arRules(6).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(6).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(6).SundayRule = cCalendarClass.NO_SUNDAY_RULE
+    arRules(6).YearRule = cCalendarClass.ALL_YEARS
+    arRules(6).NonBusinessDate = False
+    
+    arRules(7).Name = "Yom HaShoah"    
+    arRules(7).Month = cCalendarClass.NISAN
+    arRules(7).Day = 27
+    arRules(7).Year = nYear
+    arRules(7).RuleClass = cCalendarClass.HEBREW_RULES
+    arRules(7).Rule = cCalendarClass.NO_RULES
+    arRules(7).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(7).FridayRule = cCalendarClass.FRIDAY_OBSERVED_ON_THURSDAY
+    arRules(7).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(7).SundayRule = cCalendarClass.SUNDAY_OBSERVED_ON_MONDAY
+    arRules(7).YearRule = cCalendarClass.ALL_YEARS
+    arRules(7).NonBusinessDate = False
+    
+    arRules(8).Name = "Yom HaZikaron"    
+    arRules(8).Month = cCalendarClass.IYAR
+    arRules(8).Day = 4
+    arRules(8).Year = nYear
+    arRules(8).RuleClass = cCalendarClass.HEBREW_RULES
+    arRules(8).Rule = cCalendarClass.NO_RULES
+    arRules(8).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(8).ThursdayRule = cCalendarClass.THURSDAY_OBSERVED_ON_WEDNESDAY
+    arRules(8).FridayRule = cCalendarClass.FRIDAY_OBSERVED_ON_WEDNESDAY
+    arRules(8).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(8).SundayRule = cCalendarClass.SUNDAY_OBSERVED_ON_MONDAY
+    arRules(8).YearRule = cCalendarClass.ALL_YEARS
+    arRules(8).NonBusinessDate = False
+    
+    arRules(9).Name = "Yom HaAtzmaut"    
+    arRules(9).Month = cCalendarClass.IYAR
+    arRules(9).Day = 5
+    arRules(9).Year = nYear
+    arRules(9).RuleClass = cCalendarClass.HEBREW_RULES
+    arRules(9).Rule = cCalendarClass.NO_RULES
+    arRules(9).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(9).ThursdayRule = cCalendarClass.THURSDAY_OBSERVED_ON_WEDNESDAY
+    arRules(9).FridayRule = cCalendarClass.FRIDAY_OBSERVED_ON_THURSDAY
+    arRules(9).SaturdayRule = cCalendarClass.SATURDAY_OBSERVED_ON_THURSDAY
+    arRules(9).SundayRule = cCalendarClass.NO_SUNDAY_RULE
+    arRules(9).MondayRule = cCalendarClass.MONDAY_OBSERVED_ON_TUESDAY
+    arRules(9).YearRule = cCalendarClass.ALL_YEARS
+    arRules(9).NonBusinessDate = False
+    
+    arRules(10).Name = "Pesach Sheni"    
+    arRules(10).Month = cCalendarClass.IYAR
+    arRules(10).Day = 14
+    arRules(10).Year = nYear
+    arRules(10).RuleClass = cCalendarClass.HEBREW_RULES
+    arRules(10).Rule = cCalendarClass.NO_RULES
+    arRules(10).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(10).YearRule = cCalendarClass.ALL_YEARS
+    arRules(10).NonBusinessDate = False
+    
+    arRules(11).Name = "Yom Yerushalayim"    
+    arRules(11).Month = cCalendarClass.IYAR
+    arRules(11).Day = 28
+    arRules(11).Year = nYear
+    arRules(11).RuleClass = cCalendarClass.HEBREW_RULES
+    arRules(11).Rule = cCalendarClass.NO_RULES
+    arRules(11).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(11).YearRule = cCalendarClass.ALL_YEARS
+    arRules(11).NonBusinessDate = False
+    
+    arRules(12).Name = "Shavout"    
+    arRules(12).Month = cCalendarClass.SIVAN
+    arRules(12).Day = 6
+    arRules(12).Year = nYear
+    arRules(12).RuleClass = cCalendarClass.HEBREW_RULES
+    arRules(12).Rule = cCalendarClass.NO_RULES
+    arRules(12).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(12).YearRule = cCalendarClass.ALL_YEARS
+    arRules(12).NonBusinessDate = False
+    
+    arRules(13).Name = "Tish'ah B'av"    
+    arRules(13).Month = cCalendarClass.AV
+    arRules(13).Day = 9
+    arRules(13).Year = nYear
+    arRules(13).RuleClass = cCalendarClass.HEBREW_RULES
+    arRules(13).Rule = cCalendarClass.NO_RULES
+    arRules(13).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(13).SaturdayRule = cCalendarClass.SATURDAY_OBSERVED_ON_SUNDAY
+    arRules(13).YearRule = cCalendarClass.ALL_YEARS
+    arRules(13).NonBusinessDate = False
+
+    arRules(14).Name = "Sh'ela (Outside Israel)"    
+    arRules(14).Month = cCalendarClass.ATHOR
+    arRules(14).Day = 26
+    arRules(14).Year = nYear
+    arRules(14).RuleClass = cCalendarClass.COPTIC_RULES
+    arRules(14).Rule = cCalendarClass.NO_RULES
+    arRules(14).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(14).SaturdayRule = cCalendarClass.SATURDAY_OBSERVED_ON_SUNDAY
+    arRules(14).YearRule = cCalendarClass.ALL_YEARS
+    arRules(14).NonBusinessDate = False    
+       
+   
+    oCalendar.DateCalculation(arRules())
+
+    Print "Hebrew Date calculations"
+    
+    For iIndex = 0 To UBound(arRules)
+    
+        oCalendar.GregorianFromSerial(arRules(iIndex).ObservedDays1,uGreg1)
+        oCalendar.GregorianFromSerial(arRules(iIndex).ObservedDays2,uGreg2)
+        Print arRules(iIndex).Name + " - " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) + _
+              IIf(arRules(iIndex).Observed = True, _ 
+                 IIf(arRules(iIndex).ObservedDays1 = arRules(iIndex).ObservedDays2,""," (Observed on " + _ 
+                    Str(uGreg2.Month) + "/" + Format(uGreg2.Day,"00") + "/" + Str(uGreg2.Year) + ")"), " (Not Observed)") 
+    
+    Next
+    
+    Print ""
+    
+' Islamic Holidays
+
+    ReDim arRules(0 To 2)
+    
+    arRules(0).Name = "Ramadan"    
+    arRules(0).Month = cCalendarClass.RAMADAN
+    arRules(0).Day = 1
+    arRules(0).Year = nYear
+    arRules(0).RuleClass = cCalendarClass.ISLAMIC_RULES
+    arRules(0).Rule = cCalendarClass.NO_RULES
+    arRules(0).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(0).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(0).SundayRule = cCalendarClass.NO_SUNDAY_RULE
+    arRules(0).YearRule = cCalendarClass.ALL_YEARS
+    arRules(0).NonBusinessDate = False
+    
+    arRules(1).Name = "Eid-al-Fitr"    
+    arRules(1).Month = cCalendarClass.SHAWWAL
+    arRules(1).Day = 1
+    arRules(1).Year = nYear
+    arRules(1).RuleClass = cCalendarClass.ISLAMIC_RULES
+    arRules(1).Rule = cCalendarClass.NO_RULES
+    arRules(1).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(1).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(1).SundayRule = cCalendarClass.NO_SUNDAY_RULE
+    arRules(1).YearRule = cCalendarClass.ALL_YEARS
+    arRules(1).NonBusinessDate = False
+    
+    arRules(2).Name = "Al-Quds Day"    
+    arRules(2).Month = 0
+    arRules(2).Day = 0
+    arRules(2).Year = nYear
+    arRules(2).RuleClass = cCalendarClass.ISLAMIC_RULES
+    arRules(2).Rule = cCalendarClass.ISLAMIC_QUDS_DAY
+    arRules(2).Weekday = cCalendarClass.ALL_WEEKDAYS
+    arRules(2).SaturdayRule = cCalendarClass.NO_SATURDAY_RULE
+    arRules(2).SundayRule = cCalendarClass.NO_SUNDAY_RULE
+    arRules(2).YearRule = cCalendarClass.ALL_YEARS
+    arRules(2).NonBusinessDate = False
+    
+    oCalendar.DateCalculation(arRules())
+
+    Print "Islamic Date calculations"
+    
+    For iIndex = 0 To UBound(arRules)
+    
+        oCalendar.GregorianFromSerial(arRules(iIndex).ObservedDays1,uGreg1)
+        Print arRules(iIndex).Name + " - " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) 
+    
+    Next
+    
+    Print ""
+    
+' Persian Holidays
+
+    ReDim arRules(0 To 5)
+    
+    arRules(0).Name = "Nowruz"    
+    arRules(0).Month = cCalendarClass.FARVARDIN
+    arRules(0).Day = 1
+    arRules(0).Year = nYear
+    arRules(0).RuleClass = cCalendarClass.PERSIAN_RULES
+    arRules(0).Rule = cCalendarClass.NO_RULES
+    arRules(0).NonBusinessDate = False
+    
+    arRules(1).Name = "Islamic Republic Day"    
+    arRules(1).Month = cCalendarClass.FARVARDIN
+    arRules(1).Day = 12
+    arRules(1).Year = nYear
+    arRules(1).RuleClass = cCalendarClass.PERSIAN_RULES
+    arRules(1).Rule = cCalendarClass.NO_RULES
+    arRules(1).NonBusinessDate = False
+    
+    arRules(2).Name = "Sizdah Bedar"    
+    arRules(2).Month = cCalendarClass.FARVARDIN
+    arRules(2).Day = 13
+    arRules(2).Year = nYear
+    arRules(2).RuleClass = cCalendarClass.PERSIAN_RULES
+    arRules(2).Rule = cCalendarClass.NO_RULES
+    arRules(2).NonBusinessDate = False
+    
+    arRules(3).Name = "Revolution Day"    
+    arRules(3).Month = cCalendarClass.BAHMAN
+    arRules(3).Day = 22
+    arRules(3).Year = nYear
+    arRules(3).RuleClass = cCalendarClass.PERSIAN_RULES
+    arRules(3).Rule = cCalendarClass.NO_RULES
+    arRules(3).NonBusinessDate = False
+    
+    arRules(4).Name = "Oil Nationalization Day"    
+    arRules(4).Month = cCalendarClass.ESFAND
+    arRules(4).Day = 29
+    arRules(4).Year = nYear
+    arRules(4).RuleClass = cCalendarClass.PERSIAN_RULES
+    arRules(4).Rule = cCalendarClass.NO_RULES
+    arRules(4).NonBusinessDate = False
+    
+    arRules(5).Name = "Anniversary of Khomeini's Death"    
+    arRules(5).Month = cCalendarClass.XORDAD
+    arRules(5).Day = 14
+    arRules(5).Year = nYear
+    arRules(5).RuleClass = cCalendarClass.PERSIAN_RULES
+    arRules(5).Rule = cCalendarClass.NO_RULES
+    arRules(5).NonBusinessDate = False
+    
+    oCalendar.DateCalculation(arRules())
+
+    Print "Persian Date calculations"
+    
+    For iIndex = 0 To UBound(arRules)
+    
+        oCalendar.GregorianFromSerial(arRules(iIndex).ObservedDays1,uGreg1)
+        Print arRules(iIndex).Name + " - " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) 
+    
+    Next
+    
+    Print ""
+    
+' Hindu Solar Holidays
+
+    ReDim arRules(0 To 1)
+    
+    arRules(0).Name = "Sowramana Ugadi"    
+    arRules(0).Month = cCalendarClass.VAISAKHA
+    arRules(0).Day = 1
+    arRules(0).Year = nYear
+    arRules(0).RuleClass = cCalendarClass.HINDU_SOLAR_RULES
+    arRules(0).Rule = cCalendarClass.NO_RULES
+    arRules(0).NonBusinessDate = False
+    
+    arRules(1).Name = "Mesha Samkranti"    
+    arRules(1).Year = nYear
+    arRules(1).RuleClass = cCalendarClass.HINDU_SOLAR_RULES
+    arRules(1).Rule = cCalendarClass.HINDU_SOLAR_MESHA_SAMKRANTI
+    arRules(1).NonBusinessDate = False
+    
+    oCalendar.DateCalculation(arRules()) 
+    
+    Print "Hindu Solar Date calculations"
+    
+    For iIndex = 0 To UBound(arRules)
+   
+      oCalendar.GregorianFromSerial(arRules(iIndex).ObservedDays1,uGreg1)
+      Print arRules(iIndex).Name + " - " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) 
+    
+    Next
+    
+    Print ""
+    
+' Samaritan Holidays
+
+    ReDim arRules(0 To 8)
+    
+    arRules(0).Name = "Simmut of Passover"    
+    arRules(0).Year = nYear
+    arRules(0).RuleClass = cCalendarClass.SAMARITAN_RULES
+    arRules(0).Rule = cCalendarClass.SIMMUT_OF_PASSOVER
+    arRules(0).NonBusinessDate = False
+    
+    arRules(1).Name = "Passover"
+    arRules(1).Month = 1
+    arRules(1).Day = 14    
+    arRules(1).Year = nYear
+    arRules(1).RuleClass = cCalendarClass.SAMARITAN_RULES
+    arRules(1).Rule = cCalendarClass.NO_RULES
+    arRules(1).NonBusinessDate = False
+        
+    arRules(2).Name = "Festival of Unleavened Bread"
+    arRules(2).Month = 1
+    arRules(2).Day = 21    
+    arRules(2).Year = nYear
+    arRules(2).RuleClass = cCalendarClass.SAMARITAN_RULES
+    arRules(2).Rule = cCalendarClass.NO_RULES
+    arRules(2).NonBusinessDate = False
+        
+    arRules(3).Name = "Festival of Pentecost"
+    arRules(3).Year = nYear
+    arRules(3).RuleClass = cCalendarClass.SAMARITAN_RULES
+    arRules(3).Rule = cCalendarClass.PENTECOST
+    arRules(3).NonBusinessDate = False
+        
+    arRules(4).Name = "Seventh Month"
+    arRules(4).Month = 7
+    arRules(4).Day = 1    
+    arRules(4).Year = nYear
+    arRules(4).RuleClass = cCalendarClass.SAMARITAN_RULES
+    arRules(4).Rule = cCalendarClass.NO_RULES
+    arRules(4).NonBusinessDate = False
+        
+    arRules(5).Name = "Day of Atonement"
+    arRules(5).Month = 7
+    arRules(5).Day = 10   
+    arRules(5).Year = nYear
+    arRules(5).RuleClass = cCalendarClass.SAMARITAN_RULES
+    arRules(5).Rule = cCalendarClass.NO_RULES
+    arRules(5).NonBusinessDate = False    
+    
+    arRules(6).Name = "Festival of Tabernacles"
+    arRules(6).Month = 7
+    arRules(6).Day = 15    
+    arRules(6).Year = nYear
+    arRules(6).RuleClass = cCalendarClass.SAMARITAN_RULES
+    arRules(6).Rule = cCalendarClass.NO_RULES
+    arRules(6).NonBusinessDate = False
+    
+    arRules(7).Name = "Eighth Day of Sukkot"
+    arRules(7).Month = 7
+    arRules(7).Day = 22    
+    arRules(7).Year = nYear
+    arRules(7).RuleClass = cCalendarClass.SAMARITAN_RULES
+    arRules(7).Rule = cCalendarClass.NO_RULES
+    arRules(7).NonBusinessDate = False    
+    
+    arRules(8).Name = "Simmut of Tabernacles"
+    arRules(8).Year = nYear
+    arRules(8).RuleClass = cCalendarClass.SAMARITAN_RULES
+    arRules(8).Rule = cCalendarClass.SIMMUT_OF_TABERNACLES
+    arRules(8).NonBusinessDate = False    
+    
+    oCalendar.DateCalculation(arRules())
+    
+    Print "Samaritan Date calculations" 
+    
+    For iIndex = 0 To UBound(arRules)
+    
+        oCalendar.GregorianFromSerial(arRules(iIndex).ObservedDays1,uGreg1)
+        Print arRules(iIndex).Name + " - " + Str(uGreg1.Month) + "/" + Format(uGreg1.Day,"00") + "/" + Str(uGreg1.Year) 
+    
+    Next
+
+Print "press q to quit"
+Do
+     Sleep 1, 1
+Loop Until Inkey = "q"

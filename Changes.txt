@@ -15,3 +15,14 @@ Version 1.01
 Version 1.02
 
 1. Compiler warnings cleaned up. Contributed by Jose Roca.
+
+06/26/2018
+
+Version 1.10
+
+1. Added support for Samaritan calendar
+2. Higher precisions for astronomical calculations
+3. Separation of functions for moonrise and moonset
+4. Additional support for Daylight Savings adjustments
+5. Location support added to Function LunarIllumination
+6. Support functions cmApparentFromUniversal and cmUniversalFromApparent added

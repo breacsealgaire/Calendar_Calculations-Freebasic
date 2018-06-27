@@ -1,0 +1,124 @@
+#Include Once "string.bi"
+#Include Once "cCalendar\cCalendar.bi"
+
+Dim oCalendar       as cCalendar
+Dim uGregIn         as GREGORIAN_DATE
+Dim uGregOut        as GREGORIAN_DATE
+Dim nSerial         as LongInt
+Dim arFiscalYears() as Long
+Dim iIndex          as Long
+Dim bResult         as BOOLEAN
+Dim arHistory(0)    as HISTORY_MONTHS
+Dim arUpdates(0)    as Double
+Dim arSummary()     as Double
+Dim nHistoryMonth   as Short
+Dim nHistoryYear    as Long
+Dim uTime           as TIME_DURATION
+Dim nExcel          as Double
+Dim sToday          as String
+DIM sTime           AS string
+
+      sToday = Date
+      sTime = Time
+      uGregIn.Month = Val(Left(sToday,2))
+      uGregIn.Day = Val(Mid(sToday,4,2))
+      uGregIn.Year = Val(Right(sToday,4))
+      uGregIn.Hour = Val(Left(sTime,2))
+      uGregIn.Minute = Val(Mid(sTime,4,2))
+      uGregIn.Second = Val(Right(sTime,2))
+      uGregIn.Millisecond = 350
+      nSerial = oCalendar.SerialFromGregorian(uGregIn)
+      oCalendar.SerialToTime(nSerial,uTime)
+      Print "Serial Date is " + Str(nSerial) + "," + Str(uTime.Days) + " days,Time=" _
+      + Str(uTime.Hour) + ":" + Str(uTime.Minute) + ":" + Str(uTime.Second) + "." + Str(uTime.Millisecond)
+      oCalendar.GregorianFromSerial(nSerial,uGregOut)
+      Print "Gregorian Date is " + Str(uGregOut.Month) + "." + Str(uGregOut.Day) + "." + Str(uGregOut.Year) + " weekday is " + Str(uGregOut.Weekday)
+      Print "Gregorian Days Remaining is " + Str(oCalendar.GregorianDaysRemaining(uGregOut.Month,uGregOut.Day,uGregOut.Year))
+      Print "Gregorian Day Number is " + Str(oCalendar.GregorianDayNumber(uGregOut.Month,uGregOut.Day,uGregOut.Year))
+      Print "Gregorian Days in Month is " + Str(oCalendar.GregorianDaysInMonth(uGregOut.Month,uGregOut.Year))
+      Print "Gregorian Fiscal Quarter is " + Str(oCalendar.GregorianFiscalQuarter(uGregOut.Month,cCalendarClass.OCTOBER))
+      Print "Gregorian Fiscal Month is " + Str(oCalendar.GregorianFiscalMonth(uGregOut.Month,cCalendarClass.OCTOBER))
+      Print "Gregorian Fiscal Year is " + Str(oCalendar.GregorianFiscalYear(uGregOut.Month,uGregOut.Year,cCalendarClass.OCTOBER,False))
+      oCalendar.GregorianFiscalMonthYears(uGregOut.Year,cCalendarClass.OCTOBER,False,arFiscalYears())
+      Print "Gregorian Fiscal Year"
+      For iIndex = 0 To 11
+         Print "Month " + Str(iIndex + 1) + " belongs to fiscal year " + Str(arFiscalYears(iIndex))
+      Next
+
+' Setup some history month values, index 0 is the current month
+      
+      arHistory(0).Month(0) = 0
+      arHistory(0).Month(1) = 1
+      arHistory(0).Month(2) = 2
+      arHistory(0).Month(3) = 3
+      arHistory(0).Month(4) = 4
+      arHistory(0).Month(5) = 5
+      arHistory(0).Month(6) = 6
+      arHistory(0).Month(7) = 7
+      arHistory(0).Month(8) = 8
+      arHistory(0).Month(9) = 9
+      arHistory(0).Month(10) = 10
+      arHistory(0).Month(11) = 11
+      arHistory(0).Month(12) = 12
+      
+      Print "13 Month Rolling History with current month/year of " + Str(uGregOut.Month) + "-" + Str(uGregOut.Year)
+      oCalendar.SummarySameMonthLastYear(uGregOut.Month,arHistory(),arSummary())
+      Print "Summary Same Month " + Str(uGregOut.Month) + " Last Year is " + Str(arSummary(0))
+      oCalendar.SummaryLastQuarter(uGregOut.Month,cCalendarClass.JANUARY,arHistory(),arSummary())
+      Print "Summary Last Quarter is " + Str(arSummary(0))
+      oCalendar.SummaryQuarterToDate(uGregOut.Month,cCalendarClass.JANUARY,arHistory(),arSummary())
+      Print "Summary Quarter To Date is " + Str(arSummary(0))
+      oCalendar.SummaryYearToDate(uGregOut.Month,cCalendarClass.JANUARY,arHistory(),arSummary())
+      Print "Summary Year To Date is " + Str(arSummary(0))
+      Print "Adding 13 to current month and recalculating summaries..."
+      nHistoryMonth = uGregOut.Month
+      nHistoryYear = uGregOut.Year      
+      arUpdates(0) = 13
+      bResult = oCalendar.UpdateHistory(nHistoryMonth,nHistoryYear,arHistory(),uGregOut.Month,uGregOut.Year,arUpdates())
+      oCalendar.SummarySameMonthLastYear(uGregOut.Month,arHistory(),arSummary())
+      Print "Summary Same Month " + Str(uGregOut.Month) + " Last Year is " + Str(arSummary(0))
+      oCalendar.SummaryLastQuarter(uGregOut.Month,cCalendarClass.JANUARY,arHistory(),arSummary())
+      Print "Summary Last Quarter is " + Str(arSummary(0))
+      oCalendar.SummaryQuarterToDate(uGregOut.Month,cCalendarClass.JANUARY,arHistory(),arSummary())
+      Print "Summary Quarter To Date is " + Str(arSummary(0))
+      oCalendar.SummaryYearToDate(uGregOut.Month,cCalendarClass.JANUARY,arHistory(),arSummary())
+      Print "Summary Year To Date is " + Str(arSummary(0))
+      Print "Adding 1 hour 40 min to Serial Date " + Str(nSerial) + "..."
+      uTime.Days = 0
+      uTime.Hour = 1
+      uTime.Minute = 40
+      uTime.Second = 0
+      uTime.Millisecond = 0
+      nSerial = oCalendar.SerialAddTime(nSerial,uTime)
+      oCalendar.SerialToTime(nSerial,uTime)
+      Print "Serial result is " + Str(nSerial) + "," + Str(uTime.Days) + " days,Time=" _
+      + Str(uTime.Hour) + ":" + Str(uTime.Minute) + ":" + Str(uTime.Second) + "." + Str(uTime.Millisecond)
+      Print "Subtracting 23 hours, 30 minutes...."
+      uTime.Days = 0
+      uTime.Hour = 23
+      uTime.Minute = 30
+      uTime.Second = 0
+      uTime.Millisecond = 0
+      nSerial = oCalendar.SerialSubtractTime(nSerial,uTime)
+      oCalendar.SerialToTime(nSerial,uTime)
+      Print "Serial result is " + Str(nSerial) + "," + Str(uTime.Days) + " days,Time=" _
+      + Str(uTime.Hour) + ":" + Str(uTime.Minute) + ":" + Str(uTime.Second) + "." + Str(uTime.Millisecond)
+      nSerial = oCalendar.TimeToSerial(uTime)
+      Print "Time to Serial=" + Str(nSerial)
+      nSerial = oCalendar.UnixFromSerial(nSerial)
+      Print "Unix From Serial=" + Str(nSerial) + " (drops the milliseconds)"
+      nSerial = oCalendar.SerialFromUnix(nSerial)
+      Print "Serial from Unix=" + Str(nSerial) + " (milliseconds are zero)"
+      nExcel = oCalendar.ExcelFromSerial(nSerial,False)
+      Print "Excel from Serial (1900 base)=" + Str(nExcel)
+      nSerial = oCalendar.SerialFromExcel(nExcel,False)
+      Print "Serial from Excel (1900 base)=" + Str(nSerial)
+      nExcel = oCalendar.ExcelFromSerial(nSerial,True)
+      Print "Excel from Serial (1904 base)=" + Str(nExcel)
+      nSerial = oCalendar.SerialFromExcel(nExcel,True)
+      Print "Serial from Excel (1904 base)=" + Str(nSerial)
+
+Print "press q to quit"
+Do
+     Sleep 1, 1
+Loop Until Inkey = "q"
