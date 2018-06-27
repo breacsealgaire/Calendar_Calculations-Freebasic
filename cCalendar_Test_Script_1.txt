@@ -1,5 +1,5 @@
 #Include Once "string.bi"
-#Include Once "cCalendar\cCalendar.bi"
+#Include Once "cCalendar.bi"
 
 Dim oCalendar       as cCalendar
 Dim uGregIn         as GREGORIAN_DATE
