@@ -1,10 +1,10 @@
 ' ########################################################################################
 ' File: cCalendar.bi
 ' Contents: Algorithms for various calendars of current and historical interest.
-' Version: 1.02
+' Version: 1.10
 ' Compiler: FreeBasic 32 & 64-bit
 ' Copyright (c) 2016 Rick Kelly
-' Credits - Calendrical Calculations Third Edition, Nachum Dershowitz and Edward M. Reingold
+' Credits - Calendrical Calculations Ultimate Edition, Nachum Dershowitz and Edward M. Reingold
 '           Astronomical Algorithms Second Edition, Jean Meeus
 ' Released into the public domain for private and public use without restriction
 ' THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER
@@ -33,7 +33,8 @@ Private Const CHINESE_EPOCH                =   -963099                   ' Feb 1
 Private Const CHINESE_MONTH_NAME_EPOCH     =   57
 Private Const PERSIAN_EPOCH                =   226896                    ' March 22, 622
 Private Const BAHAI_EPOCH                  =   673222                    ' March 21, 1844
-Private Const TIBETAN_EPOCH                =   -46410                    ' December 7, -127  
+Private Const TIBETAN_EPOCH                =   -46410                    ' December 7, -127
+Private Const SAMARITAN_EPOCH              =   -598573                   ' March 15, -1639 (Julian)  
 Private Const EXCEL_1900_EPOCH as LongInt  =   693596                    ' January 1, 1900
 Private Const EXCEL_1904_EPOCH as LongInt  =   695056                    ' January 1, 1904
 Private Const UNIX_EPOCH as LongInt        =   719163                    ' January 1, 1970
@@ -43,16 +44,24 @@ Private Const TehranLocale_Latitude as Double         =   35.69439
 Private Const TehranLocale_Longitude as Double        =   51.42151 
 Private Const TehranLocale_Elevation as Long          =   1178
 Private Const TehranLocale_Zone as Double             =   3.5
-Private Const HinduLocaleZone as Double               =   5 + 461 / 9000
+Private Const BahaiLocale_Latitude as Double          =   35.696111  
+Private Const BahaiLocale_Longitude as Double         =   51.423056 
+Private Const BahaiLocale_Elevation as Long           =   0
+Private Const BahaiLocale_Zone as Double              =   3.5
+Private Const SamaritanLocale_Latitude as Double      =   32.1994                                   ' Mount Gerizim  
+Private Const SamaritanLocale_Longitude as Double     =   35.2728 
+Private Const SamaritanLocale_Elevation as Long       =   881
+Private Const SamaritanLocale_Zone as Double          =   2
+Private Const HinduLocaleLatitude as Double           =   23 + (9 / 60)                             ' Ujjain
+Private Const HinduLocaleLongitude as Double          =   75 + (46 / 60) + (6 / 3600)               
 Private Const HinduLocaleElevation as Long            =   0
-Private Const HinduLocaleLongitude as Double          =   75 + (46 / 60) + (6 / 3600)               ' Ujjain 75 deg, 46 min, 6 sec longitude
+Private Const HinduLocaleZone as Double               =   5 + 461 / 9000
 Private Const HinduSiderealYear as Double             =   (365 + 279457 / 1080000)
 Private Const HinduSiderealMonth as Double            =   (27 + 4644439 / 14438334)
 Private Const HinduSynodicMonth as Double             =   (29 + 7087771 / 13358334)
 Private Const HinduCreation as Double                 =   (HINDU_EPOCH - 1955880000 * HinduSiderealYear)
 Private Const HinduAnomalisticYear as Double          =   (1577917828000 / (4320000000 - 387))
 Private Const HinduAnomalisticMonth as Double         =   (1577917828 / (57753336 - 488199))
-Private Const HinduLocaleLatitude as Double           =   23 + (9 / 60)                             ' Ujjain 23 deg, 9 seconds latitude
 
 ' Meeus 'Astronomical Algorithms, 2nd ed of June 15, 2005
 
@@ -264,7 +273,9 @@ Private Const MCHU              =   12
 
 ' Astronomical definitions
 
-Private Const PI as Double       =   3.14159265358979323846
+Private Const PI as Double       =   3.141592653589793
+Private Const RadToDeg as Double =   57.29577951308232
+Private Const DegToRad as Double =   0.0174532925199433
 Private Const SPRING             =   0
 Private Const SUMMER             =   90
 Private Const AUTUMN             =   180
@@ -362,6 +373,12 @@ Private Const NAW_RUZ                        = 3
 
 Private Const LOSAR                          = 1
 
+' Rules for Rule Class = SAMARITAN_RULES
+
+Private Const SIMMUT_OF_PASSOVER             = 1
+Private Const SIMMUT_OF_TABERNACLES          = 2
+Private Const PENTECOST                      = 3
+
 ' Thursday options (when date falls on a Thursday)
 
 Private Const NO_THURSDAY_RULE               = 0
@@ -418,6 +435,7 @@ Private Const COPTIC_RULES                   = 12
 Private Const ETHIOPIC_RULES                 = 13
 Private Const BAHAI_RULES                    = 14
 Private Const TIBETAN_RULES                  = 15
+Private Const SAMARITAN_RULES                = 16
 
 ' Date Validation
 
@@ -654,6 +672,18 @@ Private Type TIBETAN_DATE
                                 
 End Type
 
+Private Type SAMARITAN_DATE
+
+    Month               as Short
+    Day                 as Short
+    Year                as Long
+    Hour                as Short
+    Minute              as Short
+    Second              as Short
+    Millisecond         as Short
+    
+End Type
+
 ' UDT's
 
 Private Type TIME_DURATION
@@ -834,6 +864,11 @@ Type cCalendar Extends Object
                                                  
 ' Julian support
 
+      Declare Sub cmJulianInGregorian(ByVal nMonth as Short, _
+                                      ByVal nDay as Short, _
+                                      ByVal nGregorianYear as Long, _
+                                      ByRef nDays0 as Long, _
+                                      ByRef nDays1 as Long)
       Declare Sub cmJulianFromDays(ByVal nDays as Long, _
                                    ByRef nMonth as Short, _
                                    ByRef nDay as Short, _
@@ -1171,14 +1206,42 @@ Type cCalendar Extends Object
                                          ByVal nYear as Long) as Long
       Declare Function cmTibetanSunEquation(ByVal nAlpha as Double) as Double
       Declare Function cmTibetanMoonEquation(ByVal nAlpha as Double) as Double
+
+' Samaritan Support
+
+      Declare Function cmSamaritanDateCalculation(ByVal nRule as Short, _
+                                                  ByVal nMonth as Short, _
+                                                  ByVal nDay as Short, _
+                                                  ByVal nGregorianYear as Long, _
+                                                  ByRef nCalcDays as Long) as BOOLEAN
+      Declare Function cmSamaritanInGregorian(ByVal nMonth as Short, _
+                                              ByVal nDay as Short, _
+                                              ByVal nGregorianYear as Long) as Long
+      Declare Function cmSamaritanNewMoonAtOrBefore(ByVal nMoment as Double) as Double
+      Declare Function cmSamaritanNewMoonAfter(ByVal nMoment as Double) as Double
+      Declare Function cmSamaritanNoon(ByVal nDays as Long) as Double
+      Declare Function cmSamaritanNewYearOnOrBefore(ByVal nDays as Long) as Long
+      Declare Function cmDaysFromSamaritan(ByVal nMonth as Short, _
+                                           ByVal nDay as Short, _
+                                           ByVal nYear as Long) as Long
+      Declare Sub cmSamaritanFromDays(ByVal nDays as Long, _
+                                      ByRef nMonth as Short, _
+                                      ByRef nDay as Short, _
+                                      ByRef nYear as Long)
       
 ' Astronomy support
 
       Declare Function cmLunarIllumination(byVal nMoment as Double) as Double
-      Declare Sub cmMoonRiseAndSet(ByVal nSerial as LongInt, _
-                                   ByVal bType as BOOLEAN, _
-                                   ByRef uLocale as LOCATION_LOCALE, _
-                                   arLunarTimes() as LUNAR_RISE_AND_SET)
+      Declare Sub cmMoonRise(ByVal nDays as Long, _
+                             ByVal bType as BOOLEAN, _
+                             ByRef uLocale as LOCATION_LOCALE, _
+                             ByRef nRise1 as Double, _
+                             ByRef nRise2 as Double)
+      Declare Sub cmMoonSet(ByVal nDays as Long, _
+                            ByVal bType as BOOLEAN, _
+                            ByRef uLocale as LOCATION_LOCALE, _
+                            ByRef nSet1 as Double, _
+                            ByRef nSet2 as Double)
       Declare Function cmEarthRadius(ByVal nLatitude as Double) as Double
       Declare Function cmSolarDistance(ByVal nMoment as Double) as Double
       Declare Function cmSolarEquationOfCenter(ByVal nC as Double) as Double
@@ -1240,8 +1303,7 @@ Type cCalendar Extends Object
                                                   ByRef uLocale as LOCATION_LOCALE) as Double
       Declare Function cmLunarParallax(ByVal nMoment as Double, _
                                        ByVal nLunarAltitude as Double, _
-                                       ByVal nLatitude as Double, _
-                                       ByVal nLongitude as Double) as Double
+                                       ByVal nLatitude as Double) as Double
       Declare Function cmGeocentricLunarAltitude(ByVal nMoment as Double, _
                                                  ByRef uLocale as LOCATION_LOCALE) as Double
       Declare Function cmLunarLatitude(ByVal nMoment as Double) as Double
@@ -1295,10 +1357,10 @@ Type cCalendar Extends Object
                                                   ByVal dtZ as Double) as Double
       Declare Function cmAberration(ByVal nC as Double) as Double
       Declare Function cmNutation (ByVal nC as Double) as Double
-      Declare Function cmDeclination(ByVal nObliquity as Double, _
+      Declare Function cmDeclination(ByVal nMoment as Double, _
                                      ByVal nLatitude as Double, _
                                      ByVal nLongitude as Double) as Double
-      Declare Function cmRightAscension(ByVal nObliquity as Double, _
+      Declare Function cmRightAscension(ByVal nMoment as Double, _
                                         ByVal nLatitude as Double, _
                                         ByVal nLongitude as Double) as Double
       Declare Function cmSiderealFromMoment(ByVal nMoment as Double) as Double      
@@ -1307,8 +1369,11 @@ Type cCalendar Extends Object
                                   ByVal nZone as Double, _
                                   ByVal nLongitude as Double) as Double
       Declare Function cmMidday(ByVal nMoment as Double, _
-                                ByVal nZone as Double, _
                                 ByVal nLongitude as Double) as Double
+      Declare Function cmApparentFromUniversal(ByVal nMoment as Double, _
+                                               ByVal nLongitude as Double) as Double
+      Declare Function cmUniversalFromApparent(ByVal nMoment as Double, _
+                                               ByVal nLongitude as Double) as Double
       Declare Function cmApparentFromLocal(ByVal nMoment as Double, _
                                            ByVal nLongitude as Double) as Double
       Declare Function cmLocalFromApparent(ByVal nMoment as Double, _
@@ -1353,7 +1418,9 @@ Type cCalendar Extends Object
 ' Common support      
 
       Declare Function cmDaylightSavings (ByVal nSerial as LongInt, _
-                                          ByRef uLocation as LOCATION_LOCALE) as LongInt      
+                                          ByRef uLocation as LOCATION_LOCALE) as LongInt
+      Declare Function cmDaylightSavingsToStandard (ByVal nSerial as LongInt, _
+                                                    ByRef uLocation as LOCATION_LOCALE) as LongInt      
       Declare Sub cmTimeFromSerial(ByVal nTime as Long, _
                                    ByRef nHour as Short, _
                                    ByRef nMinute as Short, _
@@ -1367,6 +1434,7 @@ Type cCalendar Extends Object
                                      ByRef nDays as Long,      _
                                      ByRef nTime as Long)
       Declare Function cmAMod(ByVal x as Double, ByVal y as Double) as Double
+      Declare Function cmMod3(ByVal x as Double, ByVal a as Double, ByVal b as Double) as Double
       Declare Function cmMod(ByVal x as Double, ByVal y as Double) as Double
       Declare Function cmRound(ByVal x as Double) as Long
       Declare Function cmCeiling(ByVal x as Double) as Long
@@ -1596,12 +1664,19 @@ Type cCalendar Extends Object
       Declare Function ValidTibetanDate(ByRef uDate as TIBETAN_DATE) as Short
       Declare Sub TibetanFromSerial(ByVal nSerial as LongInt, _
                                     ByRef uDate as TIBETAN_DATE)
-      Declare Function SerialFromTibetan(ByRef uDate as TIBETAN_DATE) as LongInt      
+      Declare Function SerialFromTibetan(ByRef uDate as TIBETAN_DATE) as LongInt
+
+' Samaritan Interface
+
+      Declare Function ValidSamaritanDate(ByRef uDate as SAMARITAN_DATE) as Short
+      Declare Sub SamaritanFromSerial(ByVal nSerial as LongInt, _
+                                      ByRef uDate as SAMARITAN_DATE)
+      Declare Function SerialFromSamaritan(ByRef uDate as SAMARITAN_DATE) as LongInt      
       
 ' Astronomy Interface
 
       Declare Sub LunarIllumination(ByVal nSerial as LongInt, _
-                                    ByVal nZoneHours as Double, _
+                                    ByRef uLocale as LOCATION_LOCALE, _
                                     ByRef nIllumination as Double, _
                                     ByRef bWaxing as BOOLEAN, _
                                     ByRef bCrescent as BOOLEAN)                                         
@@ -1688,7 +1763,7 @@ End Sub
 ' ========================================================================================
 Private Function cCalendar.KilometersToMiles (ByVal nKilometers as Double) as Double
 
-     Function = nKilometers * .621371
+     Function = nKilometers * 0.62137119223733
 
 End Function
 ' ========================================================================================
@@ -1696,7 +1771,7 @@ End Function
 ' ========================================================================================
 Private Function cCalendar.MilesToKilometers (ByVal nMiles as Double) as Double
 
-     Function = nMiles / .621371
+     Function = nMiles / 0.62137119223733
 
 End Function
 ' ========================================================================================
@@ -1704,7 +1779,7 @@ End Function
 ' ========================================================================================
 Private Function cCalendar.KilometersToNauticalMiles (ByVal nKilometers as Double) as Double
 
-     Function = nKilometers * .539957
+     Function = nKilometers * 0.5399568
 
 End Function
 ' ========================================================================================
@@ -1712,7 +1787,7 @@ End Function
 ' ========================================================================================
 Private Function cCalendar.NauticalMilesToKilometers (ByVal nNauticalMiles as Double) as Double
 
-     Function = nNauticalMiles / .539957
+     Function = nNauticalMiles / 0.5399568
 
 End Function
 ' ========================================================================================
@@ -1776,8 +1851,14 @@ End Function
 Private Function cCalendar.SunTransit (ByRef uLocale as LOCATION_LOCALE, _
                                        ByVal nSerial as LongInt) as LongInt
 
-    Function = cmMomentToSerial(cmMidday(cmFloor(nSerial / cCalendarClass.ONE_DAY), _
-                                         uLocale.Zone,uLocale.Longitude))
+Dim nMoment       as Double
+Dim nSunTransit   as LongInt
+
+    nMoment = cmMidday(cmFloor(nSerial / cCalendarClass.ONE_DAY),uLocale.Longitude)
+    nMoment = cmStandardFromUniversal(nMoment,uLocale.Zone)
+    nSunTransit = cmMomentToSerial(nMoment)
+
+    Function = cmDaylightSavings(nSunTransit,uLocale)
 
 End Function
 ' ========================================================================================
@@ -1862,7 +1943,7 @@ End Sub
 ' Lunar Illumination
 ' ========================================================================================
 Private Sub cCalendar.LunarIllumination (ByVal nSerial as LongInt, _
-                                         ByVal nZoneHours as Double, _     ' < 0 for eastern longitudes
+                                         ByRef uLocale as LOCATION_LOCALE, _
                                          ByRef nIllumination as Double, _
                                          ByRef bWaxing as BOOLEAN, _
                                          ByRef bCrescent as BOOLEAN)
@@ -1875,8 +1956,11 @@ Dim nMoment    as Double
 Dim nToday     as Double
 Dim nTomorrow  as Double
 
+' If date is Daylight Savings, convert to Standard Time
 
-    nMoment = cmDynamicalFromUniversal(cmUniversalFromStandard(cmSerialToMoment(nSerial),nZoneHours))
+    nSerial = cmDaylightSavingsToStandard(nSerial,uLocale)
+
+    nMoment = cmDynamicalFromUniversal(cmUniversalFromStandard(cmSerialToMoment(nSerial),uLocale.Zone))
     nToday = cmLunarIllumination(nMoment)
 
 ' Use next day illumination to determine waning/waxing
@@ -1902,7 +1986,7 @@ End Function
 ' ========================================================================================
 Private Function cCalendar.SolarDistance (ByVal nSerial as LongInt) as Double
    
-    Function = cmSolarDistance(cmSerialToMoment(nSerial)) * 149597870.691   
+    Function = cmSolarDistance(cmSerialToMoment(nSerial)) * 149597870.7   
 
 End Function
 ' ========================================================================================
@@ -1913,7 +1997,12 @@ Private Sub cCalendar.LunarRiseAndSet (ByVal nFromSerial as LongInt, _
                                        ByVal bType as BOOLEAN, _
                                        ByRef uLocale as LOCATION_LOCALE, _
                                        arLunarTimes() as LUNAR_RISE_AND_SET)
-Dim nLunarDay     as LongInt
+Dim nSerial               as LongInt
+Dim bDaylightSavings      as BOOLEAN
+Dim nTime1                as Double
+Dim nTime2                as Double
+Dim uGreg                 as GREGORIAN_DATE
+Dim nDays                 as Long
 
 ' Remove time from requested dates
 
@@ -1927,14 +2016,117 @@ Dim nLunarDay     as LongInt
     End If
     
     Erase arLunarTimes
+
+' Save the current locale DST switch to be restored later
+
+    bDaylightSavings = uLocale.bDaylightLightSavingsActive
     
 ' Loop through date range
 
-    For nLunarDay = nFromSerial To nToSerial Step cCalendarClass.ONE_DAY
+    For nDays = cmFloor(cmSerialToMoment(nFromSerial)) To cmFloor(cmSerialToMoment(nToSerial)) Step 1
+
+' Moonset standard times
+
+       cmMoonSet(nDays,bType,uLocale,nTime1,nTime2)
+
+' Take each set time and apply Daylight Savings, if applicable
+
+       If nTime1 <> 0 Then
+
+          nSerial = cmMomentToSerial(nTime1)
+
+          nSerial = cmDaylightSavings(nSerial,uLocale)
+          nTime1 = cmSerialToMoment(nSerial)
+
+' Check if it for the day requested
+
+           Select Case nDays
+
+              Case cmFloor(nTime1)
+
+                 ReDim Preserve arLunarTimes(UBound(arLunarTimes) + 1)
+                 arLunarTimes(UBound(arLunarTimes)).LunarSerialTime = nSerial
+                 arLunarTimes(UBound(arLunarTimes)).DaylightSavings = uLocale.bDaylightLightSavingsActive
+                 arLunarTimes(UBound(arLunarTimes)).RiseOrSet = cCalendarClass.MOONSET
+                   
+           End Select
+
+       End If
+
+       If nTime2 <> 0 Then
+
+          nSerial = cmMomentToSerial(nTime2)
+
+          nSerial = cmDaylightSavings(nSerial,uLocale)
+          nTime2 = cmSerialToMoment(nSerial)
+
+' Check if it for the day requested
+
+           Select Case nDays
+
+              Case cmFloor(nTime2)
+
+                 ReDim Preserve arLunarTimes(UBound(arLunarTimes) + 1)
+                 arLunarTimes(UBound(arLunarTimes)).LunarSerialTime = nSerial
+                 arLunarTimes(UBound(arLunarTimes)).DaylightSavings = uLocale.bDaylightLightSavingsActive
+                 arLunarTimes(UBound(arLunarTimes)).RiseOrSet = cCalendarClass.MOONSET
+                   
+           End Select
+
+       End If
+
+' Moonrise standard times
+
+       cmMoonRise(nDays,bType,uLocale,nTime1,nTime2)
+
+' Take each rise time and apply Daylight Savings, if applicable
+
+       If nTime1 <> 0 Then
+
+          nSerial = cmMomentToSerial(nTime1)
+          nSerial = cmDaylightSavings(nSerial,uLocale)
+          nTime1 = cmSerialToMoment(nSerial)
+
+' Check if it for the day requested
+
+           Select Case nDays
+
+              Case cmFloor(nTime1)
+
+                 ReDim Preserve arLunarTimes(UBound(arLunarTimes) + 1)
+                 arLunarTimes(UBound(arLunarTimes)).LunarSerialTime = nSerial
+                 arLunarTimes(UBound(arLunarTimes)).DaylightSavings = uLocale.bDaylightLightSavingsActive
+                 arLunarTimes(UBound(arLunarTimes)).RiseOrSet = cCalendarClass.MOONRISE
+                   
+           End Select
+
+       End If
+
+       If nTime2 <> 0 Then
+
+          nSerial = cmMomentToSerial(nTime2)
+
+          nSerial = cmDaylightSavings(nSerial,uLocale)
+          nTime2 = cmSerialToMoment(nSerial)
+
+' Check if it for the day requested
+
+           Select Case nDays
+
+              Case cmFloor(nTime2)
+
+                 ReDim Preserve arLunarTimes(UBound(arLunarTimes) + 1)
+                 arLunarTimes(UBound(arLunarTimes)).LunarSerialTime = nSerial
+                 arLunarTimes(UBound(arLunarTimes)).DaylightSavings = uLocale.bDaylightLightSavingsActive
+                 arLunarTimes(UBound(arLunarTimes)).RiseOrSet = cCalendarClass.MOONRISE
+                   
+           End Select
+
+       End If    
     
-       cmMoonRiseAndSet(nLunarDay,bType,uLocale,arLunarTimes())    
-    
-    Next         
+    Next
+
+    uLocale.bDaylightLightSavingsActive = bDaylightSavings         
  
 End Sub
 ' ========================================================================================
@@ -2786,6 +2978,24 @@ Dim nCalcDays1        as Long
             Case cCalendarClass.TIBETAN_RULES
 
                 arRules(nIndex).Observed = cmTibetanDateCalculation ( _
+                                                    arRules(nIndex).Rule, _
+                                                    arRules(nIndex).Month, _
+                                                    arRules(nIndex).Day, _
+                                                    arRules(nIndex).Year, _
+                                                    nCalcDays)
+                                                    
+' No Observed Rules are used 
+                                                    
+                arRules(nIndex).ObservedDays1 = nCalcDays * cCalendarClass.ONE_DAY
+                arRules(nIndex).ObservedDays2 = nCalcDays1 * cCalendarClass.ONE_DAY
+                
+' Save date for business day calculations
+
+                cmSaveDateCalculation (arRules(nIndex))
+
+            Case cCalendarClass.SAMARITAN_RULES
+
+                arRules(nIndex).Observed = cmSamaritanDateCalculation ( _
                                                     arRules(nIndex).Rule, _
                                                     arRules(nIndex).Month, _
                                                     arRules(nIndex).Day, _
@@ -4339,6 +4549,74 @@ Dim nSerialTime as LongInt
     Function = (Abs(nSerialDays) * cCalendarClass.ONE_DAY + nSerialTime) * IIf(nSerialDays < 0,-1,1)                             
                              
 End Function
+
+' ########################################################################################
+' Samaritan Calendar
+' ########################################################################################
+
+' ========================================================================================
+' Validate the date as a valid Samaritan date representation
+' ========================================================================================
+Private Function cCalendar.ValidSamaritanDate (ByRef uDate as SAMARITAN_DATE) as Short
+
+' Return VALID_DATE if valid, otherwise a value showing which part of the date was invalid
+
+Dim uWorkDate    as SAMARITAN_DATE
+
+' The basic validation process is to convert the date to days format and back
+' and then compare the month and day
+
+    cmSamaritanFromDays(cmDaysFromSamaritan(uDate.Month,uDate.Day,uDate.Year), _
+                        uWorkDate.Month,uWorkDate.Day,uWorkDate.Year)
+
+    If uWorkDate.Day <> uDate.Day Then
+
+       Function = cCalendarClass.INVALID_DAY
+
+    Else
+
+       If uWorkDate.Month <> uDate.Month Then
+
+          Function = cCalendarClass.INVALID_MONTH
+
+       Else
+
+          Function = cCalendarClass.VALID_DATE
+
+       End If
+
+    End If
+
+End Function
+' ========================================================================================
+' Samaritan Date from Serial
+' ========================================================================================
+Private Sub cCalendar.SamaritanFromSerial (ByVal nSerial as LongInt, _
+                                           ByRef uDate as SAMARITAN_DATE)
+                        
+Dim nDays       as Long
+Dim nTime       as Long
+                        
+    cmSerialBreakApart(nSerial,nDays,nTime)
+    cmSamaritanFromDays(nDays,uDate.Month,uDate.Day,uDate.Year)
+    cmTimeFromSerial(nTime,uDate.Hour,uDate.Minute,uDate.Second,uDate.Millisecond)
+                        
+End Sub
+' ========================================================================================
+' Serial Date from Samaritan
+' ========================================================================================
+Private Function cCalendar.SerialFromSamaritan (ByRef uDate as SAMARITAN_DATE) as LongInt
+
+Dim nSerialDays as LongInt
+Dim nSerialTime as LongInt
+
+    nSerialDays = cmDaysFromSamaritan(uDate.Month,uDate.Day,uDate.Year)
+    nSerialTime = cmTimeToSerial(uDate.Hour,uDate.Minute,uDate.Second,uDate.Millisecond)
+                                 
+    Function = (Abs(nSerialDays) * cCalendarClass.ONE_DAY + nSerialTime) * IIf(nSerialDays < 0,-1,1)                             
+                             
+End Function
+
 
 ' ########################################################################################
 ' Time Calculations
@@ -6004,17 +6282,17 @@ End Function
 ' ========================================================================================
 Private Function cCalendar.cmPersianNewYearOnOrBefore (ByVal nDays as Long) as Long
 
-Dim nApprox        as Double
+Dim nApprox    as Long    
 
-    nApprox = cmEstimatePriorSolarLongitude(cmMiddayInTehran(nDays),cCalendarClass.SPRING)
+    nApprox = cmFloor(cmEstimatePriorSolarLongitude(cmMiddayInTehran(nDays),cCalendarClass.SPRING))
 
-    If cmSolarLongitude(cmMiddayInTehran(cmFloor(nApprox))) > cCalendarClass.SPRING + 2 Then _
+    While cmSolarLongitude(cmMiddayInTehran(nApprox)) > cCalendarClass.SPRING + 2
 
-        nApprox = nApprox + 1
+       nApprox = nApprox + 1
 
-    End If
+    Wend
 
-    Function = cmFloor(nApprox)
+    Function = nApprox
 
 End Function
 ' ========================================================================================
@@ -6022,10 +6300,7 @@ End Function
 ' ========================================================================================
 Private Function cCalendar.cmMiddayInTehran (ByVal nDays as Long) as Double
 
-    Function = cmUniversalFromStandard(cmMidday(nDays, _
-                                                cCalendarClass.TehranLocale_Zone, _
-                                                cCalendarClass.TehranLocale_Longitude), _
-                                       cCalendarClass.TehranLocale_Zone)
+    Function = cmMidday(nDays,cCalendarClass.TehranLocale_Longitude)
 
 End Function
 
@@ -7629,43 +7904,24 @@ Dim nDays       as Long
                          
 End Function
 ' ========================================================================================
-' Search for Bahai New Year on vernal equinox (Around March 21)
+' Search for Bahai New Year on day when the vernal equinox occurs before sunset
 ' ========================================================================================
 Private Function cCalendar.cmBahaiNewYearOnOrBefore (ByVal nDays as Long) as Double
 
 ' The first day of Bahai Badi calendar is the day on which the vernal
 ' equinox occurs before sunset in Tehran
 
-Dim nSunset        as Double
-Dim nSpring        as Double  
-Dim nMonth         as Short
-Dim nDay           as Short
-Dim nYear          as Long
-Dim nSpringYear    as Long    
+Dim nApprox    as Long    
 
-    cmGregorianFromDays(nDays,nMonth,nDay,nYear)
-    nSpringYear = nYear
-    nSpring = cmSeasonalEquinox(nYear,cCalendarClass.SPRING)
-   
-    If cmFloor(nSpring) > nDays Then
+    nApprox = cmFloor(cmEstimatePriorSolarLongitude(cmBahaiSunset(nDays),cCalendarClass.SPRING))
 
-        nSpringYear = nYear - 1
-        nSpring = cmSeasonalEquinox(nSpringYear,cCalendarClass.SPRING)     
-    
-    End If
-    
-    nSunset = cmBahaiSunset(cmFloor(nSpring))
-    
-' Check for vernal equinox after sunset when nDays = nSpring is found
-    
-    If cmFloor(nSpring) = nDays AndAlso nSpring > nSunset Then
+    While cmSolarLongitude(cmBahaiSunset(nApprox)) > cCalendarClass.SPRING + 2
 
-       nSpring = cmSeasonalEquinox(nSpringYear - 1,cCalendarClass.SPRING)     
-       nSunset = cmBahaiSunset(cmFloor(nSpring))
-    
-    End If
+       nApprox = nApprox + 1
 
-    Function = nSpring + IIf(nSpring > nSunset,1,0)
+    Wend
+
+    Function = nApprox
 
 End Function
 ' ========================================================================================
@@ -7674,7 +7930,7 @@ End Function
 Private Function cCalendar.cmBahaiSunset (ByVal nDays as Long) as Double
 
 ' Since the solar longitude calculations are more accurate than
-' the sunset calculations, we make a small adjustment (about 8.5 minutes) to bring
+' the sunset calculations, we make a small adjustment (about 1.44 minutes) to bring
 ' them closer together for the years when sunset in Tehran and the vernal equinox
 ' are very close together such as in Gregorian year 2026.
 
@@ -7682,13 +7938,13 @@ Dim bBogus         as BOOLEAN
 
     Function = cmUniversalFromStandard( _
                  cmSunSet(nDays, _
-                          cCalendarClass.TehranLocale_Zone, _
-                          cCalendarClass.TehranLocale_Latitude, _
-                          cCalendarClass.TehranLocale_Longitude, _
-                          cCalendarClass.TehranLocale_Elevation, _
+                          cCalendarClass.BahaiLocale_Zone, _
+                          cCalendarClass.BahaiLocale_Latitude, _
+                          cCalendarClass.BahaiLocale_Longitude, _
+                          cCalendarClass.BahaiLocale_Elevation, _
                           cCalendarClass.SUNRISE_SUNSET_TIME, _
                           bBogus), _
-                 cCalendarClass.TehranLocale_Zone)  - .006
+                 cCalendarClass.BahaiLocale_Zone) - .001
 
 End Function
 
@@ -8065,6 +8321,183 @@ Private Function cCalendar.cmTibetanMoonEquation (ByVal nAlpha as Double) as Dou
           End Select          
                    
     End Select    
+
+End Function
+
+' ########################################################################################
+' Samaritan Support
+' ########################################################################################
+
+' ========================================================================================
+' Return Samaritan dates occurring in a given Gregorian year
+' ========================================================================================
+Private Function cCalendar.cmSamaritanDateCalculation (ByVal nRule as Short, _
+                                                       ByVal nMonth as Short, _
+                                                       ByVal nDay as Short, _
+                                                       ByVal nGregorianYear as Long, _
+                                                       ByRef nCalcDays as Long) as BOOLEAN
+
+Dim nPassover         as Long
+Dim nTabernacles      as Long
+
+    Select Case nRule
+
+       Case cCalendarClass.SIMMUT_OF_PASSOVER
+
+          nPassover = cmSamaritanInGregorian(1,14,nGregorianYear)
+          nCalcDays = nPassover - 49 - cmGregorianWeekday(nPassover)
+
+       Case cCalendarClass.SIMMUT_OF_TABERNACLES
+
+          nTabernacles = cmSamaritanInGregorian(7,15,nGregorianYear)
+          nCalcDays = nTabernacles - 49 - cmGregorianWeekday(nTabernacles)
+
+       Case cCalendarClass.PENTECOST
+
+          nPassover = cmSamaritanInGregorian(1,14,nGregorianYear)
+          nCalcDays = nPassover + 56
+
+       Case Else
+
+          nCalcDays = cmSamaritanInGregorian(nMonth,nDay,nGregorianYear)
+
+    End Select    
+
+    Function = True
+
+End Function
+' ========================================================================================
+' Return the Samaritan days date occuring in a Gregorian Year
+' ========================================================================================
+Private Function cCalendar.cmSamaritanInGregorian (ByVal nMonth as Short, _
+                                                   ByVal nDay as Short, _
+                                                   ByVal nGregorianYear as Long) as Long
+Dim nJan1            as Long
+Dim nDec31           as Long
+Dim nSamaritanMonth  as Short
+Dim nSamaritanDay    as Short
+Dim nSamaritanYear0  as Long
+Dim nSamaritanYear1  as Long
+Dim nDays            as Long
+
+    nSamaritanYear0 = nGregorianYear + 1638
+    nSamaritanYear1 = nSamaritanYear0 + 1
+    cmGregorianYearRange(nGregorianYear,nJan1,nDec31)
+    nDays = cmDaysFromSamaritan(nMonth,nDay,nSamaritanYear0)
+
+    If cBool(nDays >= nJan1) = True AndAlso cBool(nDays <= nDec31) = True Then
+
+       Function = nDays
+
+    Else
+
+       Function = cmDaysFromSamaritan(nMonth,nDay,nSamaritanYear1)
+
+    End If
+
+End Function
+' ========================================================================================
+' Calculate Samaritan Date from Days
+' ========================================================================================
+Private Sub cCalendar.cmSamaritanFromDays (ByVal nDays as Long, _
+                                           ByRef nMonth as Short, _
+                                           ByRef nDay as Short, _
+                                           ByRef nYear as Long)
+
+Dim nMoon    as Long
+Dim nNewYear as Long
+
+    nMoon = cmFloor( _
+               cmSamaritanNewMoonAtOrBefore( _
+                  cmSamaritanNoon(nDays)))
+    nNewYear = cmSamaritanNewYearOnOrBefore(nMoon)
+
+    nMonth = cmRound((nMoon - nNewYear) / 29.5) + 1
+    nYear = cmRound(((nNewYear - cCalendarClass.SAMARITAN_EPOCH) / 365.25) _
+          + cmCeiling((nMonth - 5) / 8))
+    nDay = nDays - nMoon + 1
+
+End Sub
+' ========================================================================================
+' Calculate Days from Samaritan Date
+' ========================================================================================
+Private Function cCalendar.cmDaysFromSamaritan (ByVal nMonth as Short, _
+                                                ByVal nDay as Short, _
+                                                ByVal nYear as Long) as Long
+
+Dim nY      as Long
+Dim nM      as Long
+
+    nY = cmSamaritanNewYearOnOrBefore( _
+            cmFloor(cCalendarClass.SAMARITAN_EPOCH _
+               + 50 _
+               + (365.25 * (nYear - cmCeiling((nMonth - 5) / 8)))))
+    nM = cmSamaritanNewMoonAtOrBefore(nY + 29.5 * (nMonth - 1) + 15)
+
+    Function = nM + nDay - 1
+
+End Function
+' ========================================================================================
+' Calculate Samaritan New Year
+' ========================================================================================
+Private Function cCalendar.cmSamaritanNewYearOnOrBefore (ByVal nDays as Long) as Long
+
+Dim nGregorianYear    as Long
+Dim nJulianDays       as Long
+Dim nDays0            as Long
+Dim nDays1            as Long
+Dim nJan1             as Long
+Dim nDec31            as Long
+
+    nGregorianYear = cmGregorianYearFromDays(nDays)
+    cmGregorianYearRange(nGregorianYear,nJan1,nDec31)
+    cmJulianInGregorian(cCalendarClass.March,11,nGregorianYear,nDays0,nDays1)
+
+' Find which date is in the Gregorian Year
+
+    If cBool(nDays0 >= nJan1) = True AndAlso cBool(nDays0 <= nDec31) = True Then
+
+       nJulianDays = nDays0
+
+    Else
+
+       nJulianDays = nDays1
+
+    End If
+
+    Function = cmFloor( _
+                  cmSamaritanNewMoonAfter( _
+                     cmSamaritanNoon(nJulianDays)))
+
+End Function
+' ========================================================================================
+' Calculate Samaritan solar noon on nDays
+' ========================================================================================
+Private Function cCalendar.cmSamaritanNoon (ByVal nDays as Long) as Double
+
+    Function = cmMidday(nDays,cCalendarClass.SamaritanLocale_Longitude)
+
+End Function
+' ========================================================================================
+' Calculate Samaritan date of the first new moon after nMoment
+' ========================================================================================
+Private Function cCalendar.cmSamaritanNewMoonAfter (ByVal nMoment as Double) as Double
+
+    Function = cmCeiling( _
+                  cmApparentFromUniversal( _
+                     cmNewMoonAfter(nMoment),cCalendarClass.SamaritanLocale_Longitude) _
+             - .5)
+
+End Function
+' ========================================================================================
+' Calculate Samaritan date of the first new moon at or before nMoment
+' ========================================================================================
+Private Function cCalendar.cmSamaritanNewMoonAtOrBefore (ByVal nMoment as Double) as Double
+
+    Function = cmCeiling( _
+                  cmApparentFromUniversal( _
+                     cmNewMoonBefore(nMoment),cCalendarClass.SamaritanLocale_Longitude) _
+             - .5)
 
 End Function
 
@@ -9227,6 +9660,28 @@ End Sub
 ' ########################################################################################
 
 ' ========================================================================================
+' Return the Julian days dates occuring in a Gregorian Year
+' ========================================================================================
+Private Sub cCalendar.cmJulianInGregorian (ByVal nMonth as Short, _
+                                           ByVal nDay as Short, _
+                                           ByVal nGregorianYear as Long, _
+                                           ByRef nDays0 as Long, _
+                                           ByRef nDays1 as Long)
+
+Dim nJan1         as Long
+Dim nJulianMonth  as Short
+Dim nJulianDay    as Short
+Dim nJulianYear0  as Long
+Dim nJulianYear1  as Long
+
+    nJan1 = cmGregorianNewYear(nGregorianYear)
+    cmJulianFromDays(nJan1,nJulianMonth,nJulianDay,nJulianYear0)
+    nJulianYear1 = IIf(nJulianYear0 = -1,1,nJulianYear0 + 1)
+    nDays0 = cmDaysFromJulian(nMonth,nDay,nJulianYear0)
+    nDays1 = cmDaysFromJulian(nMonth,nDay,nJulianYear1)
+
+End Sub
+' ========================================================================================
 ' Return the Julian month,day, and year from a days date
 ' ========================================================================================
 Private Sub cCalendar.cmJulianFromDays(ByVal nDays as Long, _
@@ -9384,188 +9839,240 @@ Dim nLunarPhase     as Double
 
 ' Normalize to maximum lunar visible half circle
 
-    nLunarPhase = cmMod(nLunarPhase,180)
+    nLunarPhase = cmMod3(nLunarPhase,0,180)
 
     Function = (1 + cmCosineDegrees(nLunarPhase)) / 2
 
 End Function
 ' ========================================================================================
-' Moonrise and Moonset Local Times for one day
+' Moonrise Standard Times for one day
 ' ========================================================================================
-Private Sub cCalendar.cmMoonRiseAndSet (ByVal nSerial as LongInt, _
-                                        ByVal bType as BOOLEAN, _
-                                        ByRef uLocale as LOCATION_LOCALE, _
-                                        arLunarTimes() as LUNAR_RISE_AND_SET)
+Private Sub cCalendar.cmMoonRise (ByVal nDays as Long, _
+                                  ByVal bType as BOOLEAN, _
+                                  ByRef uLocale as LOCATION_LOCALE, _
+                                  ByRef nRise1 as Double, _
+                                  ByRef nRise2 as Double)
 
-' arLunarTimes contains array entries per event
+Dim nLastAltitude    as Double
+Dim nCurrentAltitude as Double
+Dim nUpper           as Double
+Dim nLower           as Double
+Dim nPrecision       as Double
+Dim nOneHour         as Double
+Dim nApprox          as Double
+Dim nMoonRise        as Double
+Dim nHour            as Double
 
-' Geocentric times are calculated from the center of the earth not corrected for
-' parallax and refraction. Many published times are geocentric calculations,
-' including the USNO tables. Topocentric times are calculated from the earth
-' surface and are corrected for parallax and refraction.
+    nOneHour = 1 / 24
+    nLower = cmUniversalFromStandard(nDays - nOneHour,uLocale.Zone)
+    nUpper = cmUniversalFromStandard(nDays + 1 + nOneHour,uLocale.Zone)
+    nLastAltitude = IIf(bType = cCalendarClass.TOPOCENTRIC, _
+                        cmTopocentricLunarAltitude(nLower,uLocale), _
+                        cmGeocentricLunarAltitude(nLower,uLocale))
+    nRise1 = 0
+    nRise2 = 0
 
-' The times are found by looking for hours when the altitude of the moon
-' crosses the horizon (the sign changes) and then a bisection search is found
-' within the hour to find the time to the nearest second before the found event
-' time is rounded to the nearest minute.
+' Search the day for the hour of rise
 
-Dim nLastAltitude         as Short
-Dim nCurrentAltitude      as Short
-Dim bDaylightSavings      as BOOLEAN
-Dim nSearchHour           as LongInt
-Dim nSearchHourFrom       as LongInt
-Dim nSearchHourTo         as LongInt
-Dim nSearchMinute         as LongInt
-Dim bEventType            as BOOLEAN    ' False=Moonset, True=Moonrise
-Dim nEventTime            as LongInt
-Dim bSearch               as BOOLEAN 
-Dim nSearchAltitude       as Double                  
+    For nHour = nLower  + nOneHour to nUpper Step nOneHour
 
-' Save the current locale DST switch to be restored later
+       nApprox = nHour
+       nCurrentAltitude = IIf(bType = cCalendarClass.TOPOCENTRIC, _
+                              cmTopocentricLunarAltitude(nApprox,uLocale), _
+                              cmGeocentricLunarAltitude(nApprox,uLocale)) 
 
-    bDaylightSavings = uLocale.bDaylightLightSavingsActive
+' Have we found the hour of rising?
 
-' Since nLunarDay will be assumed to be a UTC date, well search the prior and next
-' days to be sure to find events on nSerial in local time.
+       If 0 > nLastAltitude AndAlso 0 < nCurrentAltitude Then
 
-    If bType = cCalendarClass.GEOCENTRIC Then
-       nLastAltitude = cmSignum(cmGeocentricLunarAltitude(cmSerialToMoment(nSerial - cCalendarClass.ONE_DAY),uLocale))
-    Else
-       nLastAltitude = cmSignum(cmTopocentricLunarAltitude(cmSerialToMoment(nSerial - cCalendarClass.ONE_DAY),uLocale))
-    End If 
-    
-    For nSearchHour = nSerial - cCalendarClass.ONE_DAY + cCalendarClass.ONE_HOUR To nSerial + cCalendarClass.ONE_DAY * 2 Step cCalendarClass.ONE_HOUR
+' Binary Search within the hour of rising
 
-' Calculate current hour lunar altitude
+          nUpper = nApprox
+          nApprox = (nLower + nUpper) * .5
+          nCurrentAltitude = IIf(bType = cCalendarClass.TOPOCENTRIC, _
+                                 cmTopocentricLunarAltitude(nApprox,uLocale), _
+                                 cmGeocentricLunarAltitude(nApprox,uLocale)) 
+          nLastAltitude = IIf(bType = cCalendarClass.TOPOCENTRIC, _
+                              cmTopocentricLunarAltitude(nLower,uLocale), _
+                              cmGeocentricLunarAltitude(nLower,uLocale)) 
+          nPrecision = (cCalendarClass.ONE_SECOND) / cCalendarClass.ONE_DAY
 
-        If bType = cCalendarClass.GEOCENTRIC Then
-           nCurrentAltitude = cmSignum(cmGeocentricLunarAltitude(cmSerialToMoment(nSearchHour),uLocale))
-        Else
-           nCurrentAltitude = cmSignum(cmTopocentricLunarAltitude(cmSerialToMoment(nSearchHour),uLocale))
-        End If 
+          While nUpper - nLower > nPrecision
 
-' Check for rise or set event
+          If (0 > nLastAltitude AndAlso 0 < nCurrentAltitude) Then  
 
-        If nCurrentAltitude <> nLastAltitude Then
-        
-           If nCurrentAltitude < 0 Then
+' Use lower range
 
-' Moonset    
-              bEventType = cCalendarClass.MOONSET
-              nLastAltitude = nCurrentAltitude
+             nUpper = nApprox
+             nApprox = nLower + ((nUpper - nLower) * .5)
+             nCurrentAltitude = IIf(bType = cCalendarClass.TOPOCENTRIC, _
+                                    cmTopocentricLunarAltitude(nApprox,uLocale), _
+                                    cmGeocentricLunarAltitude(nApprox,uLocale)) 
+          Else
 
-           Else
+' Use upper range
 
-'Moonrise
-              bEventType = cCalendarClass.MOONRISE
-              nLastAltitude = nCurrentAltitude
+            nLower = nApprox
+            nLastAltitude = nCurrentAltitude
+            nApprox = nLower + ((nUpper - nLower) * .5)
+            nCurrentAltitude = IIf(bType = cCalendarClass.TOPOCENTRIC, _
+                                   cmTopocentricLunarAltitude(nApprox,uLocale), _
+                                   cmGeocentricLunarAltitude(nApprox,uLocale)) 
+          EndIf
 
-           End If
+          Wend
 
-' Search with the hour to find the event
+          nMoonRise = cmStandardFromUniversal(nApprox,uLocale.Zone)
 
-           nSearchHourFrom = nSearchHour - cCalendarClass.ONE_HOUR
-           nSearchHourTo = nSearchHour
-           nSearchMinute = nSearchHourFrom + ((nSearchHourTo - nSearchHourFrom) / 2)
-           bSearch = True
-           
-           While bSearch = True
+' Is rise standard time within the day requested?
 
-              If bType = cCalendarClass.GEOCENTRIC Then
-  
-                nSearchAltitude = cmGeocentricLunarAltitude(cmSerialToMoment(nSearchMinute),uLocale)
+          If cmFloor(nMoonrise) = nDays Then
 
-              Else
+' Rise may occur twice in the same day at latitudes above approximately 61.5 degrees North or South
 
-                nSearchAltitude = cmTopocentricLunarAltitude(cmSerialToMoment(nSearchMinute),uLocale)
+             If nRise1 = 0 Then
 
-             End If
+                nRise1 = nMoonrise
+                nLastAltitude = IIf(bType = cCalendarClass.TOPOCENTRIC, _
+                                    cmTopocentricLunarAltitude(nHour + nOneHour * 3,uLocale), _
+                                    cmGeocentricLunarAltitude(nHour + nOneHour * 3,uLocale))  
+                nHour = nHour + nOneHour * 4
 
-             Select Case nSearchAltitude
-    
-                Case Is < 0
+             Else
 
-                   If bEventType = cCalendarClass.MOONRISE Then
+' If second rise found, end search
 
-' Lower range for moonrise
+                nRise2 = nMoonRise
+                Exit For
 
-                      nSearchHourFrom = nSearchMinute
+             Endif
 
-                   Else
+          EndIf
 
-' Upper range for moonset
+       Else
 
-                      nSearchHourTo = nSearchMinute
+          nLastAltitude = nCurrentAltitude
+          nLower = nApprox
 
-                   End If
-       
-                Case Is > 0
+       EndIf
 
-                   If bEventType = cCalendarClass.MOONRISE Then
-
-' Upper range for moonrise
-
-                      nSearchHourTo = nSearchMinute
-
-                   Else
-
-' Lower range for moonset
-
-                      nSearchHourFrom = nSearchMinute
-
-                   End If
-
-                Case Else
-
-' Exact 0 altitude
-       
-                   bSearch = False
-       
-             End Select
-     
-             nSearchMinute = nSearchHourFrom + ((nSearchHourTo - nSearchHourFrom) / 2) 
-     
-             If nSearchHourTo - nSearchHourFrom <= cCalendarClass.ONE_SECOND Then
-     
-                bSearch = False
-        
-             End If
-
-           Wend
-           
-Dim uGreg as GREGORIAN_DATE
-
-' Round to nearest minute
-
-           nSearchMinute = cmFloor((nSearchMinute + (30 * cCalendarClass.ONE_SECOND)) _
-                         / cCalendarClass.ONE_MINUTE) * cCalendarClass.ONE_MINUTE
-
-' Convert to local time with daylight savings applied, if active
-
-           nSearchMinute = cmDaylightSavings(cmMomentToSerial(cmStandardFromUniversal(cmSerialToMoment(nSearchMinute),uLocale.Zone)),uLocale)
- 
-' Check if it for the day requested
-
-           Select Case cmFloor(cmSerialToMoment(nSearchMinute))
-
-              Case cmFloor(cmSerialToMoment(nSerial))
-
-                 ReDim Preserve arLunarTimes(UBound(arLunarTimes) + 1)
-                 arLunarTimes(UBound(arLunarTimes)).LunarSerialTime = nSearchMinute
-                 arLunarTimes(UBound(arLunarTimes)).DaylightSavings = uLocale.bDaylightLightSavingsActive
-                 arLunarTimes(UBound(arLunarTimes)).RiseOrSet = bEventType
-                    
-              Case Is > cmFloor(cmSerialToMoment(nSerial))
-
-                 Exit For
-                    
-              End Select
-           
-      End If
-           
     Next
 
-    uLocale.bDaylightLightSavingsActive = bDaylightSavings
+End Sub
+' ========================================================================================
+' Moonset Standard Times for one day
+' ========================================================================================
+Private Sub cCalendar.cmMoonSet (ByVal nDays as Long, _
+                                 ByVal bType as BOOLEAN, _
+                                 ByRef uLocale as LOCATION_LOCALE, _
+                                 ByRef nSet1 as Double, _
+                                 ByRef nSet2 as Double)
+
+Dim nLastAltitude    as Double
+Dim nCurrentAltitude as Double
+Dim nUpper           as Double
+Dim nLower           as Double
+Dim nPrecision       as Double
+Dim nOneHour         as Double
+Dim nApprox          as Double
+Dim nMoonSet         as Double
+Dim nHour            as Double
+
+    nOneHour = 1 / 24
+    nLower = cmUniversalFromStandard(nDays - nOneHour,uLocale.Zone)
+    nUpper = cmUniversalFromStandard(nDays + 1 + nOneHour,uLocale.Zone)
+    nLastAltitude = IIf(bType = cCalendarClass.TOPOCENTRIC, _
+                        cmTopocentricLunarAltitude(nLower,uLocale), _
+                        cmGeocentricLunarAltitude(nLower,uLocale))
+    nSet1 = 0
+    nSet2 = 0
+
+' Search the day for the hour of set
+
+    For nHour = nLower  + nOneHour to nUpper Step nOneHour
+
+       nApprox = nHour
+       nCurrentAltitude = IIf(bType = cCalendarClass.TOPOCENTRIC, _
+                              cmTopocentricLunarAltitude(nApprox,uLocale), _
+                              cmGeocentricLunarAltitude(nApprox,uLocale)) 
+
+' Have we found the hour of setting?
+
+       If nLastAltitude > 0 AndAlso nCurrentAltitude < 0 Then
+
+' Binary Search within the hour of setting
+
+          nUpper = nApprox
+          nApprox = (nLower + nUpper) * .5
+          nCurrentAltitude = IIf(bType = cCalendarClass.TOPOCENTRIC, _
+                                 cmTopocentricLunarAltitude(nApprox,uLocale), _
+                                 cmGeocentricLunarAltitude(nApprox,uLocale)) 
+          nLastAltitude = IIf(bType = cCalendarClass.TOPOCENTRIC, _
+                              cmTopocentricLunarAltitude(nLower,uLocale), _
+                              cmGeocentricLunarAltitude(nLower,uLocale)) 
+          nPrecision = (cCalendarClass.ONE_MINUTE) / cCalendarClass.ONE_DAY
+
+          While nUpper - nLower > nPrecision
+
+          If (nLastAltitude > 0 AndAlso nCurrentAltitude < 0) Then  
+
+' Use lower range
+
+             nUpper = nApprox
+             nApprox = nLower + ((nUpper - nLower) * .5)
+             nCurrentAltitude = IIf(bType = cCalendarClass.TOPOCENTRIC, _
+                                    cmTopocentricLunarAltitude(nApprox,uLocale), _
+                                    cmGeocentricLunarAltitude(nApprox,uLocale))
+
+          Else
+
+' Use upper range
+
+            nLower = nApprox
+            nLastAltitude = nCurrentAltitude
+            nApprox = nLower + ((nUpper - nLower) * .5)
+            nCurrentAltitude = IIf(bType = cCalendarClass.TOPOCENTRIC, _
+                                   cmTopocentricLunarAltitude(nApprox,uLocale), _
+                                   cmGeocentricLunarAltitude(nApprox,uLocale)) 
+          EndIf
+
+          Wend
+
+          nMoonSet = cmStandardFromUniversal(nApprox,uLocale.Zone)
+
+' Is set standard time within the day requested?
+
+          If cmFloor(nMoonSet) = nDays Then
+
+' Set may occur twice in the same day at latitudes above approximately 61.5 degrees North or South
+
+             If nSet1 = 0 Then
+
+                nSet1 = nMoonSet
+                nLastAltitude = IIf(bType = cCalendarClass.TOPOCENTRIC, _
+                                    cmTopocentricLunarAltitude(nHour + nOneHour * 3,uLocale), _
+                                    cmGeocentricLunarAltitude(nHour + nOneHour * 3,uLocale))  
+                nHour = nHour + nOneHour * 4
+
+             Else
+
+' If second rise found, end search
+
+                nSet2 = nMoonSet
+                Exit For
+
+             Endif
+
+          EndIf
+
+       Else
+
+          nLastAltitude = nCurrentAltitude
+          nLower = nApprox
+
+       EndIf
+
+    Next
 
 End Sub
 ' ========================================================================================
@@ -9581,7 +10088,7 @@ Dim nLunarAltitude    as Double
 
     nLunarAltitude = cmGeocentricLunarAltitude(nMoment,uLocale)
     Function = nLunarAltitude _
-             - cmLunarParallax(nMoment,nLunarAltitude,uLocale.Latitude,uLocale.Longitude) _
+             - cmLunarParallax(nMoment,nLunarAltitude,uLocale.Latitude) _
              + cmSolarRefraction(uLocale.Elevation,uLocale.Latitude)
 
 End Function
@@ -9590,8 +10097,7 @@ End Function
 ' ========================================================================================
 Private Function cCalendar.cmLunarParallax (ByVal nMoment as Double, _
                                             ByVal nLunarAltitude as Double, _
-                                            ByVal nLatitude as Double, _
-                                            ByVal nLongitude as Double) as Double
+                                            ByVal nLatitude as Double) as Double
 
     Function = cmArcSinDegrees((cmEarthRadius(nLatitude) / cmLunarDistance(nMoment)) _
              * cmCoSineDegrees(nLunarAltitude))
@@ -9606,7 +10112,6 @@ Private Function cCalendar.cmGeocentricLunarAltitude (ByVal nMoment as Double, _
 
 ' Not corrected for parallax or refraction
 
-Dim nObliquity                 as Double
 Dim nLunarLongitude            as Double
 Dim nLunarLatitude             as Double
 Dim nLunarRightAscension       as Double
@@ -9614,11 +10119,10 @@ Dim nLunarDeclination          as Double
 Dim nLocalSiderealHourAngle    as Double
 Dim nAltitude                  as Double
 
-    nObliquity = cmObliquity(cmJulianCenturies(nMoment))
     nLunarLongitude = cmLunarLongitude(nMoment)
     nLunarLatitude = cmLunarLatitude(nMoment)
-    nLunarRightAscension = cmRightAscension(nObliquity,nLunarLatitude,nLunarLongitude)
-    nLunarDeclination = cmDeclination(nObliquity,nLunarLatitude,nLunarLongitude)
+    nLunarRightAscension = cmRightAscension(nMoment,nLunarLatitude,nLunarLongitude)
+    nLunarDeclination = cmDeclination(nMoment,nLunarLatitude,nLunarLongitude)
     nLocalSiderealHourAngle = cmCalcDegrees(cmSiderealFromMoment(nMoment) + _
                                             uLocale.Longitude - nLunarRightAscension)
     nAltitude = cmArcSinDegrees((cmSinDegrees(uLocale.Latitude) * _
@@ -9627,7 +10131,7 @@ Dim nAltitude                  as Double
                       cmCoSineDegrees(nLunarDeclination) * _
                       cmCoSineDegrees(nLocalSiderealHourAngle)))
 
-    Function = cmCalcDegrees(nAltitude + 180) - 180
+    Function = cmMod3(nAltitude,-180,180)
 
 End Function
 ' ========================================================================================
@@ -9754,37 +10258,22 @@ Private Function cCalendar.cmMomentOfDepression (ByVal nApprox as Double, _
                                                  ByRef bBogus as BOOLEAN) as Double
 
 Dim nMoment        as Double
-Dim nPrecision     as Double
-Dim nLoop          as BOOLEAN
 
-    nLoop = True
-    nPrecision = cmAngle(0,0,30)
 
-    While nLoop = True
+    nMoment = cmApproxMomentOfDepression(nApprox,nLatitude,nLongitude,nDepression,bEarly,bBogus)
 
-        nMoment = cmApproxMomentOfDepression(nApprox,nLatitude,nLongitude,nDepression,bEarly,bBogus)
+    Select Case bBogus
 
-        Select Case bBogus
+       Case False
 
-        Case False
+          If Abs(nApprox - nMoment) >= 30 / 3600 Then      'Within 30 sec?
 
-            If Abs(nApprox - nMoment) < nPrecision Then
+             nMoment = cmApproxMomentOfDepression(nMoment,nLatitude,nLongitude,nDepression,bEarly,bBogus)
 
-                nLoop = False
+          End If
 
-            Else
-
-                nApprox = nMoment
-
-            End If
-
-        Case Else
-
-            nLoop = False
-
-        End Select
-    Wend
-
+    End Select
+ 
     Function = nMoment
 
 End Function
@@ -9807,29 +10296,31 @@ Dim nValue                 as Double
 Dim nAlt                   as Double
 Dim nTry                   as Double
 Dim nDays                  as Long
+Dim nOffset                as Double
+Dim nApprox                as Double 
 
     bBogus = False
+    nApprox = 0
     nDays = cmFloor(nMoment)
     nTry = cmSineOffset(nMoment,nLatitude,nLongitude,nDepression)
 
     Select Case nDepression
-
     Case Is >= 0
-
-        nAlt = IIf(bEarly = True,nDays,nDays + 1)
-
+        nAlt = IIf(bEarly = cCalendarClass.MORNING,nDays,nDays + 1)
     Case Else
-
         nAlt = nDays + .5
-
     End Select
 
     nValue = IIf(Abs(nTry) > 1,cmSineOffset(nAlt,nLatitude,nLongitude,nDepression),nTry)
 
-    bBogus = IIf(Abs(nValue) > 1,True,False)
+    If Abs(nValue) <=1 Then        ' Event Occurs
+       nOffset = cmMod3(cmArcSinDegrees(nValue) / 360,-.5,.5)
+       nApprox = cmLocalFromApparent(nDays + IIf(bEarly = cCalendarClass.MORNING,.25 - nOffset,.75 +nOffset),nLongitude)
+    Else
+       bBogus = True
+    EndIf
 
-    Function = cmLocalFromApparent(nDays + .5 + IIf(bEarly = True,-1,1) * _
-                                  (Frac(.5 + cmArcSinDegrees(nValue) / 360) - .25),nLongitude)
+    Function = nApprox
 
 End Function
 ' ========================================================================================
@@ -9861,7 +10352,7 @@ Dim nUniversal         as Double
 Dim nDeclination       as Double
 
     nUniversal = cmUniversalFromLocal(nMoment,nLongitude)
-    nDeclination = cmDeclination(cmObliquity(cmJulianCenturies(nUniversal)),0,cmSolarLongitude(nUniversal))
+    nDeclination = cmDeclination(nUniversal,0,cmSolarLongitude(nUniversal))
 
     Function = cmTangentDegrees(nLatitude) _
              * cmTangentDegrees(nDeclination) _
@@ -9909,9 +10400,7 @@ Dim nCorrection    as Double
                + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,-2117,0,2,-1,0) _
                + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,-1423,4,0,1,0) _
                + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,-1571,4,-1,0,0) _
-               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,1165,0,2,1,0)
-
-   nCorrection = nCorrection _
+               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,1165,0,2,1,0) _
                + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,-3699111,2,0,-1,0) _
                + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,-569925,0,0,2,0) _
                + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,-3149,0,0,0,2) _
@@ -9935,7 +10424,21 @@ Dim nCorrection    as Double
                + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,2354,2,2,-1,0) _
                + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,-1117,0,0,4,0) _
                + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,-1739,1,0,-2,0) _
-               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,-4421,0,0,2,-2)
+               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,-4421,0,0,2,-2) _
+               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,0,0,0,1,2) _
+               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,0,2,0,-1,2) _
+               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,0,0,2,0,0) _
+               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,0,2,0,0,2) _
+               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,0,0,0,2,2) _
+               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,0,2,1,-2,0) _
+               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,0,2,-1,0,-2) _
+               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,0,2,1,0,-2) _
+               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,0,1,1,1,0) _
+               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,0,3,0,-2,0) _
+               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,0,4,0,-3,0) _
+               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,0,2,-1,2,0) _
+               + cmSumDistancePeriods(nE,nElongation,nSolarAnomaly,nLunarAnomaly,nMoonFromNode,8752,2,0,-1,-2) _
+
 
     Function =  385000560 + nCorrection  ' Distance returned in meters
 
@@ -10489,26 +10992,26 @@ Dim nAdditional            as Double
     nC3 = nC^3
     nC4 = nC^4
 
-    nApprox = 730125.59766 _
-             + cCalendarClass.MeanSynodicMonth * 1236.85 * nC _
-             + .0001337 * nC2 _
-             - .000000150 * nC3 _
-             + .00000000073 * nC4
+    nApprox = cCalendarClass.J2000 + 5.09766 _
+            + cCalendarClass.MeanSynodicMonth * 1236.85 * nC _
+            + .00015437 * nC2 _
+            - .000000150 * nC3 _
+            + .00000000073 * nC4
 
     nE = 1.0 - .002516 * nC - .0000074 * nC2
 
     nSolarAnomaly = 2.5534 + 29.10535670 * 1236.85 * nC _
                    - .0000014 * nC2 - .00000011 * nC3
 
-    nLunarAnomaly = 201.5643 + (385.81693528 * 1236.85) * nC _
+    nLunarAnomaly = 201.5643 + 385.81693528 * 1236.85 * nC _
                    + .0107582 * nC2 + .00001238 * nC3 _
                    - .000000058 * nC4
 
-    nMoonArgument = 160.7108 + (390.67050284 * 1236.85) * nC _
+    nMoonArgument = 160.7108 + 390.67050284 * 1236.85 * nC _
                    - .0016118 * nC2 - .00000227 * nC3 _
                    + .000000011 * nC4
 
-    nOmega = 124.7746 + (-1.56375588 * 1236.85) * nC _
+    nOmega = 124.7746 + (-1.56375588 * 1236.85 * nC) _
             + .0020672 * nC2 + .00000215 * nC3
 
     nCorrection = -.00017 * cmSinDegrees(nOmega) _
@@ -10546,7 +11049,7 @@ Dim nAdditional            as Double
                 + cmAdditionalAdjustments(nK,207.19,.121824,.000042) _
                 + cmAdditionalAdjustments(nK,161.72,24.198154,.000037) _
                 + cmAdditionalAdjustments(nK,331.55,3.592518,.000023) _
-                + cmAdditionalAdjustments(nK,251.83,26.641886,.000164) _
+                + cmAdditionalAdjustments(nK,251.83,26.651886,.000164) _
                 + cmAdditionalAdjustments(nK,84.66,18.206239,.00011) _
                 + cmAdditionalAdjustments(nK,207.14,2.453732,.00006) _
                 + cmAdditionalAdjustments(nK,34.52,27.261239,.000047) _
@@ -10804,23 +11307,31 @@ End Function
 ' ========================================================================================
 ' Angular distance of a point north or south of the celestial equator
 ' ========================================================================================
-Private Function cCalendar.cmDeclination (ByVal nObliquity as Double, _
+Private Function cCalendar.cmDeclination (ByVal nMoment as Double, _
                                           ByVal nLatitude as Double, _
                                           ByVal nLongitude as Double) as Double
 
-    Function = cmArcSinDegrees(cmSinDegrees(nLatitude) * _
-                   cmCoSineDegrees(nObliquity) + _
-                   cmCoSineDegrees(nLatitude) * _
-                   cmSinDegrees(nObliquity) * _
-                   cmSinDegrees(nLongitude))
+Dim nObliquity   as Double
+
+    nObliquity = cmObliquity(cmJulianCenturies(nMoment))
+
+    Function = cmArcSinDegrees(cmSinDegrees(nLatitude) _
+             * cmCoSineDegrees(nObliquity) _
+             + cmCoSineDegrees(nLatitude) _
+             * cmSinDegrees(nObliquity) _
+             * cmSinDegrees(nLongitude))
 
 End Function
 ' ========================================================================================
 ' Angular distance measured eastward along the celestial equator from the vernal equinox 
 ' ========================================================================================
-Private Function cCalendar.cmRightAscension (ByVal nObliquity as Double, _
+Private Function cCalendar.cmRightAscension (ByVal nMoment as Double, _
                                              ByVal nLatitude as Double, _
                                              ByVal nLongitude as Double) as Double
+
+Dim nObliquity   as Double
+
+    nObliquity = cmObliquity(cmJulianCenturies(nMoment))
 
     Function = cmArcTanDegrees((cmSinDegrees(nLongitude) * _
                     cmCoSineDegrees(nObliquity)) - _
@@ -10853,7 +11364,7 @@ Private Function cCalendar.cmMeanTropicalYear (ByVal nC as Double) as Double
     Function = 365.2421896698 _
              - (.00000615359 * nC) _
              - (.000000000729 * nC^2) _
-             + (.000000000624 * nC^3)
+             + (.000000000264 * nC^3)
 End Function
 ' ========================================================================================
 ' Earth Radius at a given Latitude
@@ -10866,11 +11377,11 @@ Dim nLatitudeRadians as Double
 
      nLatitudeRadians = cmDegreesToRadians(cmMod(Abs(nLatitude),90))^2
 
-' Radius at the equator = 6378137 meters
+' Radius at the equator = 6378136.6 meters
 ' Radius at the poles = 6356752.314245 meters
 
      Function = 6356752.314245 * (1 + nLatitudeRadians)^0.5 _
-              / ((6356752.314245^2 / 6378137^2) + nLatitudeRadians)^.5
+              / ((6356752.314245^2 / 6378136.6^2) + nLatitudeRadians)^.5
 
 End Function 
 ' ========================================================================================
@@ -10888,11 +11399,27 @@ End Function
 ' True middle of a Solar Day
 ' ========================================================================================
 Private Function cCalendar.cmMidday (ByVal nMoment as Double, _
-                                     ByVal nZone as Double, _
                                      ByVal nLongitude as Double) as Double
 
-    Function = cmStandardFromLocal(cmLocalFromApparent(nMoment + .5,nLongitude), _
-                                   nZone,nLongitude)
+    Function = cmUniversalFromApparent(nMoment + .5,nLongitude)
+
+End Function
+' ========================================================================================
+' Convert Universal time to Apparent
+' ========================================================================================
+Private Function cCalendar.cmApparentFromUniversal (ByVal nMoment as Double, _
+                                                    ByVal nLongitude as Double) as Double
+
+    Function = cmApparentFromLocal(cmLocalFromUniversal(nMoment,nLongitude),nLongitude)
+
+End Function
+' ========================================================================================
+' Convert Apparent time to Universal
+' ========================================================================================
+Private Function cCalendar.cmUniversalFromApparent (ByVal nMoment as Double, _
+                                                    ByVal nLongitude as Double) as Double
+
+    Function = cmUniversalFromLocal(cmLocalFromApparent(nMoment,nLongitude),nLongitude)
 
 End Function
 ' ========================================================================================
@@ -10918,37 +11445,33 @@ End Function
 ' ========================================================================================
 Private Function cCalendar.cmEquationOfTime (ByVal nMoment as Double) as Double
 
-Dim nCenturies             as Double           ' Julian Centuries
+Dim nC                     as Double           ' Julian Centuries
 Dim nY                     as Double
 Dim nLongitude             as Double
 Dim nAnomaly               as Double
 Dim nEccentricity          as Double
-Dim nTimeAdjust            as Double
+Dim nEquation              as Double
 
-    nCenturies = cmJulianCenturies(nMoment)
+    nC = cmJulianCenturies(nMoment)
 
     nlongitude = 280.46645 _
-               + 36000.76983 _
-               * nCenturies _
-               + .0003032 _
-               * nCenturies^2
+               + 36000.76983 * nC _
+               + .0003032 * nC^2
 
-    nAnomaly = cmSolarMeanAnomaly(nCenturies)
+    nAnomaly = 357.52910 + 35999.05030 * nC - 0.0001559 * nC^2 - 0.00000048 * nC^3
 
-    nEccentricity = cmEccentricityEarthOrbit(nCenturies)
+    nEccentricity = 0.016708617 - 0.000042037 * nC - 0.0000001236 * nC^2
 
-    nY = cmTangentDegrees(cmObliquity(nCenturies) / 2)^2
+    nY = cmTangentDegrees(cmObliquity(nC) / 2)^2
 
-    nTimeAdjust = (1 / (2 * cCalendarClass.PI)) _
-                * ((nY * cmSinDegrees(nLongitude * 2)) _
-                + (-2 * nEccentricity * cmSinDegrees(nAnomaly)) _
-                + (4 * nEccentricity * nY * cmSinDegrees(nAnomaly) _
-                * cmCoSineDegrees(nLongitude * 2)) _
-                + (-.5 * nY * nY * cmSinDegrees(nLongitude * 4)) _
-                + (-1.25 * nEccentricity * nEccentricity _
-                * cmSinDegrees(nAnomaly * 2)))
+    nEquation = 1 / (2 * cCalendarClass.PI) _
+              * ((nY * cmSinDegrees(nLongitude * 2)) _
+              - (2 * nEccentricity * cmSinDegrees(nAnomaly)) _
+              + (4 * nEccentricity * nY * cmSinDegrees(nAnomaly) * cmCoSineDegrees(nLongitude * 2)) _ 
+              - (.5 * nY^2 * cmSinDegrees(nLongitude * 4)) _
+              - (1.25 * nEccentricity^2 * cmSinDegrees(nAnomaly * 2)))  
 
-    Function = cmSignum(nTimeAdjust) * IIf(Abs(nTimeAdjust) < .5,Abs(nTimeAdjust),.5)
+    Function = cmSignum(nEquation) * IIf(Abs(nEquation) < .5,Abs(nEquation),.5)
 
 End Function
 ' ========================================================================================
@@ -10972,21 +11495,10 @@ End Function
 ' ========================================================================================
 Private Function cCalendar.cmObliquity (ByVal nCenturies as Double) as Double
 
-Dim nCenturies100      as Double
-
-    nCenturies100 = nCenturies / 100
-
     Function = cmAngle(23,26,21.448) _
-             - cmAngle(0,0,4680.93) * nCenturies100 _
-             - cmAngle(0,0,1.55) * nCenturies100^2 _
-             + cmAngle(0,0,1999.25) * nCenturies100^3 _
-             - cmAngle(0,0,51.38) * nCenturies100^4 _
-             - cmAngle(0,0,249.67) * nCenturies100^5 _
-             - cmAngle(0,0,39.05) * nCenturies100^6 _
-             + cmAngle(0,0,7.12) * nCenturies100^7 _
-             + cmAngle(0,0,27.87) * nCenturies100^8 _
-             + cmAngle(0,0,5.79) * nCenturies100^9 _
-             + cmAngle(0,0,2.45) * nCenturies100^10 _
+             - cmAngle(0,0,46.8150) * nCenturies _
+             - cmAngle(0,0,0.00059) * nCenturies^2 _
+             + cmAngle(0,0,0.001813) * nCenturies^3
 
 End Function
 ' ========================================================================================
@@ -11086,64 +11598,74 @@ End Function
 Private Function cCalendar.cmEphemerisCorrection (ByVal nMoment as Double) as Double
 
 Dim nYear              as Long
-Dim nTheta             as Double
+Dim nC                 as Double
 Dim nCorrection        as Double
+Dim nY                 as Double
 
     nYear = cmGregorianYearFromDays(cmFloor(nMoment))
 
-    nTheta = cmGregorianDateDifference(cCalendarClass.JANUARY,1,1900,cCalendarClass.JULY,1,nYear) / 36525.0
+    nC = cmGregorianDateDifference(cCalendarClass.JANUARY,1,1900,cCalendarClass.JULY,1,nYear) / 36525.0
 
     Select Case nYear
 
-    Case 1988 To 2019
+    Case 2051 To 2150
 
-        nCorrection = (nYear - 1933) / 86400
+        nCorrection = (-20 + 32 * ((nYear - 1820) / 100)^2 + 0.5628 * (2150 - nYear)) / 86400.0
 
-    Case 1900 To 1987
+    Case 2006 To 2050
 
-        nCorrection = -.00002 _
-                    + nTheta * .000297 _
-                    + nTheta^2 * .025184 _
-                    + nTheta^3 * -.181133 _
-                    + nTheta^4 * .553040 _
-                    + nTheta^5 * -.861938 _
-                    + nTheta^6 * .677066  _
-                    + nTheta^7 * -.212591
+        nY = nYear - 2000
+        nCorrection = (62.92 + 0.32217 * nY + 0.005589 * nY^2) / 86400.0
+
+    Case 1987 To 2005
+
+        nY = nYear - 2000
+        nCorrection = (63.86 + 0.3345 * nY - 0.060374 * nY^2 _
+                    + 0.0017275 * nY^3 + 0.000651814 * nY^4 _
+                    + 0.00002373599 * nY^5) / 86400.0
+
+    Case 1900 To 1986
+
+        nCorrection = -0.00002 + 0.000297 * nC + 0.025184 * nC^2 _
+                    - 0.181133 * nC^3 + 0.553040 * nC^4 - 0.861938 * nC^5 _
+                    + 0.677066 * nC^6 - 0.212591 * nC^7
 
     Case 1800 To 1899
 
-        nCorrection = -0.000009 _
-                    + nTheta * .003844 _
-                    + nTheta^2 * .083563 _
-                    + nTheta^3 * .865736 _
-                    + nTheta^4 * 4.867575 _
-                    + nTheta^5 * 15.845535 _
-                    + nTheta^6 * 31.332267 _
-                    + nTheta^7 * 38.291999 _
-                    + nTheta^8 * 28.316289 _
-                    + nTheta^9 * 11.636204 _
-                    + nTheta^10 * 2.043794
+        nCorrection = -0.000009 + 0.003844 * nC + 0.083563 * nC^2 _
+                    + 0.865736 * nC^3 + 4.867575 * nC^4 + 15.845535 * nC^5 _
+                    + 31.332267 * nC^6 + 38.291999 * nC^7 + 28.316289 * nC^8 _
+                    + 11.636204 * nC^9 + 2.043794 * nC^10
 
     Case 1700 To 1799
 
-        nYear = nYear - 1700
-        nCorrection = (8.118780842 _
-                    + nYear * -.005092142 _
-                    + nYear^2 * .003336121 _
-                    + nYear^3 * -.000026684) / 86400.0
+        nY = nYear - 1700
+        nCorrection = (8.118780842 - 0.005092142 * nY _
+                    + 0.003336121 * nY^2 - 0.0000266484 * nY^3) / 86400.0
 
-    Case 1620 To 1699
+    Case 1600 To 1699
 
-        nYear = nYear - 1600
-        nCorrection = (196.58333 _
-                    + nYear * -4.0675 _
-                    + nYear^2 * .0219167) / 86400.0
+        nY = nYear - 1600
+        nCorrection = (120 - 0.9808 * nY - 0.01532 * nY^2 _
+                    + 0.000140272128 * nY^3) / 86400.0
+    Case 500 To 1599
+
+        nY = (nYear - 1000) / 100
+        nCorrection = (1574.2 - 556.01 * nY + 71.23472 * nY^2 _
+                    + 0.319781 * nY^3 - 0.8503463 * nY^4 _
+                    - 0.005050998 * nY^5 + 0.0083572073 * nY^6) / 86400.0
+
+    Case -499 To 499
+
+        nY = nYear / 100
+        nCorrection = (10583.6 - 1014.41 * nY + 33.78311 * nY^2 _
+                    - 5.952053 * nY^3 - 0.1798452 * nY^4 _
+                    + 0.022174192 * nY^5 + 0.0090316521 * nY^6) / 86400.0
 
     Case Else
 
-        nTheta = cmGregorianDateDifference(cCalendarClass.JANUARY,1,1810, _
-                                           cCalendarClass.JANUARY,1,nYear) + .5
-        nCorrection = ((nTheta^2 / 41048480) - 15) / 86400.0
+        nY = (nYear - 1820) / 100
+        nCorrection = (-20 + 32 * nY^2) / 86400.0
 
     End Select
 
@@ -11219,7 +11741,7 @@ End Function
 ' ========================================================================================
 Private Function cCalendar.cmDegreesToRadians(ByVal nDegrees as Double) as Double
 
-    Function = nDegrees * 0.0174532925199433
+    Function = nDegrees * cCalendarClass.DegToRad
     
 End Function
 ' ========================================================================================
@@ -11227,7 +11749,7 @@ End Function
 ' ========================================================================================
 Private Function cCalendar.cmRadiansToDegrees(ByVal nRadians as Double) as Double
 
-    Function = nRadians * 57.29577951308232
+    Function = nRadians * cCalendarClass.RadToDeg
     
 End Function
 
@@ -11248,6 +11770,29 @@ Private Function cCalendar.cmDaylightSavings (ByVal nSerial as LongInt, _
 
        nSerial = nSerial _
                + (Abs(uLocale.DaylightSavingsMinutes) _
+               * cCalendarClass.ONE_MINUTE _
+               * cmSignum(uLocale.Zone) _
+               * -1)
+       uLocale.bDaylightLightSavingsActive = True
+     
+    End If                                              
+
+    Function = nSerial
+    
+End Function
+' ========================================================================================
+' If serial date is daylight savings, return standard serial date
+' ========================================================================================
+Private Function cCalendar.cmDaylightSavingsToStandard (ByVal nSerial as LongInt, _
+                                                        ByRef uLocale as LOCATION_LOCALE) as LongInt
+
+    uLocale.bDaylightLightSavingsActive = False
+                                              
+    If nSerial >= uLocale.DaylightSavingsBegins AndAlso nSerial <  uLocale.DaylightSavingsEnds _
+       AndAlso CLNG(uLocale.bApplyDaylightSavings) = True Then
+
+       nSerial = nSerial _
+               - (Abs(uLocale.DaylightSavingsMinutes) _
                * cCalendarClass.ONE_MINUTE _
                * cmSignum(uLocale.Zone) _
                * -1)
@@ -11357,7 +11902,22 @@ End Sub
 Private Function cCalendar.cmAMod(ByVal x as Double, _
                                   ByVal y as Double) as Double
 
-    Function = x - y * (cmCeiling(x / y) - 1)
+'    Function = x - y * (cmCeiling(x / y) - 1)
+    Function = y + cmMod(x,-y) 
+
+End Function
+' ========================================================================================
+' Force modulus x into the range a..b for Real Numbers
+' ========================================================================================
+Private Function cCalendar.cmMod3(ByVal x as Double, _
+                                  ByVal a as Double, _
+                                  ByVal b as Double) as Double
+
+    If a = b Then
+       Function = x
+    Else
+       Function = a + (cmMod(x - a,b - a))
+    EndIf
 
 End Function
 ' ========================================================================================
