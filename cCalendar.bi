@@ -1,9 +1,9 @@
 ' ########################################################################################
 ' File: cCalendar.bi
 ' Contents: Algorithms for various calendars of current and historical interest.
-' Version: 1.10
+' Version: 1.11
 ' Compiler: FreeBasic 32 & 64-bit
-' Copyright (c) 2016 Rick Kelly
+' Copyright (c) 2020 Rick Kelly
 ' Credits - Calendrical Calculations Ultimate Edition, Nachum Dershowitz and Edward M. Reingold
 '           Astronomical Algorithms Second Edition, Jean Meeus
 ' Released into the public domain for private and public use without restriction
@@ -283,13 +283,13 @@ Private Const WINTER             =   270
 
 Private Const SUNRISE_SUNSET_TIME           = 0
 Private Const CIVIL_TWILIGHT_TIME           = 6 
-Private Const NAUTICAL_TWIGHTLIGHT_TIME     = 12
+Private Const NAUTICAL_TWILIGHT_TIME        = 12
 Private Const ASTRONOMICAL_TWILIGHT_TIME    = 18
 
-Private Const NEWMOON                   =   0
-Private Const FIRSTQUARTERMOON          =   90
-Private Const FULLMOON                  =   180
-Private Const LASTQUARTERMOON           =   270
+Private Const NEWMOON                   = 0
+Private Const FIRSTQUARTERMOON          = 90
+Private Const FULLMOON                  = 180
+Private Const LASTQUARTERMOON           = 270
 Private Const GEOCENTRIC as BOOLEAN     = True
 Private Const TOPOCENTRIC as BOOLEAN    = False
 Private Const MOONRISE as BOOLEAN       = True
@@ -4742,24 +4742,28 @@ Private Function cCalendar.ExcelFromSerial (ByVal nSerial as LongInt, _
 ' bBaseYear1904 = TRUE or FALSE
 
 Dim nMoment      as Double
+Dim nDays        as Long
 
     nMoment = cmSerialToMoment(nSerial)
+    nDays = cmFloor(nMoment)
 
     Select Case bBaseYear1904
 
     Case False
 
-        nMoment = nMoment _
-                - cCalendarClass.EXCEL_1900_EPOCH _
-                + IIf(cmFloor(nMoment) > 60,1,0)_
-                + 1
+        nDays = nDays _
+              - cCalendarClass.EXCEL_1900_EPOCH _
+              + IIf(cmFloor(nMoment) > 60,1,0)_
+              + 1
 
     Case Else
 
-        nMoment = nMoment _
-                - cCalendarClass.EXCEL_1904_EPOCH
+        nDays = nDays _
+              - cCalendarClass.EXCEL_1904_EPOCH
 
     End Select
+
+    nMoment = (Abs(nDays) + frac(nMoment)) * Iif(nDays < 0,-1,1)
 
     Function = nMoment
 
@@ -4786,22 +4790,29 @@ Private Function cCalendar.SerialFromExcel (ByVal nExcel as Double, _
 ' bBaseYear1904 = TRUE or FALSE
 
 Dim nMoment      as Double
+Dim nDays        as Long
+
+    nDays = cmFloor(nExcel)
 
     Select Case bBaseYear1904
 
     Case False
 
-        nMoment = nExcel _
-                + cCalendarClass.EXCEL_1900_EPOCH _
-                - IIf(cmFloor(nExcel) < 60,0,1) _
-                - 1
+        nDays = nDays _
+              + cCalendarClass.EXCEL_1900_EPOCH _
+              - IIf(cmFloor(nExcel) > cCalendarClass.EXCEL_1900_EPOCH,0,1) _
+              + IIf(cmFloor(nExcel) < 0,1,0) _              
+              - 1
 
     Case Else
 
-        nMoment = nExcel _
-                + cCalendarClass.EXCEL_1904_EPOCH
+        nDays = nDays _
+              + cCalendarClass.EXCEL_1904_EPOCH _
+              + IIf(cmFloor(nExcel) < 0,1,0) _ 
 
     End Select
+
+    nMoment = (Abs(nDays) + frac(Abs(nExcel))) * Iif(nDays < 0,-1,1)
 
     Function = cmMomentToSerial(nMoment)
 
@@ -11875,7 +11886,7 @@ Dim nTime   as Long
 
     cmSerialBreakApart(nSerial,nDays,nTime)
     
-    Function = nDays + (nTime / cCalendarClass.ONE_DAY) 
+    Function = (Abs(nDays) + (nTime / cCalendarClass.ONE_DAY)) * IIf(nDays < 0,-1,1) 
 
 End Function
 ' ========================================================================================

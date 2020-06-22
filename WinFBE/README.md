@@ -1,0 +1,5 @@
+# Calendar_Calculations-Freebasic
+
+The WinFBE folder contains a project in the cCalendar folder for a demonstration program of cCalendar using WinFBE version 2.1.7. The 'inc' folder contains a crInc folder to be saved in the 'inc' folder of the WinFBE toolchain folder. As of WinFBE version 2.1.7, the ..inc\Afx\Afxtime.inc is behind the framework repository. If you are using version 2.1.7 or earlier, you can find the updated version in the inc\Afx folder here. WinFBE versions after 2.1.7 will have the updated AfxTime code.
+
+The cCalendar.bas contains a section that retrieves the local Windows timezone information and assigns a default location name, latitude, longitude, and, elevation based on the Bias retrieved. Feel free to customize this to add the locations of your choice. Mostly major airports have been included.
