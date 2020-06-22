@@ -275,7 +275,7 @@ Dim bCrescent               as BOOLEAN
              
    End If
     
-    oCalendar.Sunrise(uLocale,nSunriseOther,cCalendarClass.NAUTICAL_TWIGHTLIGHT_TIME,nBogus,nSerial)
+    oCalendar.Sunrise(uLocale,nSunriseOther,cCalendarClass.NAUTICAL_TWILIGHT_TIME,nBogus,nSerial)
     
     If nBogus = True Then
 
@@ -356,7 +356,7 @@ Dim bCrescent               as BOOLEAN
              
    End If
    
-    oCalendar.Sunset(uLocale,nSunriseOther,cCalendarClass.NAUTICAL_TWIGHTLIGHT_TIME,nBogus,nSerial)
+    oCalendar.Sunset(uLocale,nSunriseOther,cCalendarClass.NAUTICAL_TWILIGHT_TIME,nBogus,nSerial)
     
     If nBogus = True Then
 

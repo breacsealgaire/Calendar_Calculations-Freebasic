@@ -26,3 +26,10 @@ Version 1.10
 4. Additional support for Daylight Savings adjustments
 5. Location support added to Function LunarIllumination
 6. Support functions cmApparentFromUniversal and cmUniversalFromApparent added
+
+Version 1.11
+
+1. Cleanup misspellings
+2. Update SerialFromExcel function to handle dates prior to Excel epochs
+3. Handle the time portions of conversions as always a positive value
+4. Add a WinFBE version 2.1.7 demonstration project
